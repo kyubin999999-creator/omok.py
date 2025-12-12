@@ -1,41 +1,59 @@
-# 오목 게임 구현
+import pygame
+import sys
 
-# 15x15 오목판 초기화
+# Pygame 초기화
+pygame.init()
+
+# 게임 설정
+SCREEN_WIDTH = 600
+SCREEN_HEIGHT = 600
+LINE_WIDTH = 2
+CELL_SIZE = SCREEN_WIDTH // 15  # 15x15 보드
+BACKGROUND_COLOR = (255, 255, 255)
+LINE_COLOR = (0, 0, 0)
+PLAYER1_COLOR = (255, 0, 0)  # 플레이어 1 (X) 빨간색
+PLAYER2_COLOR = (0, 0, 255)  # 플레이어 2 (O) 파란색
+
+# 화면 설정
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("오목 게임")
+
+# 오목판 초기화
 def initialize_board():
     return [['.' for _ in range(15)] for _ in range(15)]  # '.'은 빈칸을 의미
 
-# 보드 출력 함수
-def print_board(board):
-    print("    " + " ".join([f"{i:2}" for i in range(15)]))  # 열 번호 출력
-    print("   +" + "---+" * 15)  # 경계선
+# 보드 그리기
+def draw_board(board):
+    # 배경 그리기
+    screen.fill(BACKGROUND_COLOR)
 
-    for i in range(15):
-        row_display = f"{i:2} |"  # 행 번호와 왼쪽 경계선
-        for j in range(15):
-            if board[i][j] == 'X':  # 플레이어 1 (X)
-                row_display += f" X |"
-            elif board[i][j] == 'O':  # 플레이어 2 (O)
-                row_display += f" O |"
-            else:
-                row_display += " . |"  # 빈칸은 점으로 표시
-        print(row_display)  # 한 행 출력
-        print("   +" + "---+" * 15)  # 경계선 출력
+    # 가로, 세로 라인 그리기
+    for row in range(16):
+        pygame.draw.line(screen, LINE_COLOR, (0, row * CELL_SIZE), (SCREEN_WIDTH, row * CELL_SIZE), LINE_WIDTH)
+    for col in range(16):
+        pygame.draw.line(screen, LINE_COLOR, (col * CELL_SIZE, 0), (col * CELL_SIZE, SCREEN_HEIGHT), LINE_WIDTH)
 
-# 사용자 입력 받기
-def place_stone(board, player):
-    while True:
-        try:
-            row = int(input(f"플레이어 {player}, 행 번호를 입력하세요 (0-14): "))
-            col = int(input(f"플레이어 {player}, 열 번호를 입력하세요 (0-14): "))
-            if board[row][col] == '.':  # 빈칸에만 놓을 수 있음
-                board[row][col] = 'X' if player == 1 else 'O'  # 'X'는 플레이어 1, 'O'는 플레이어 2
-                break
-            else:
-                print("이미 돌이 놓여진 곳입니다. 다른 곳에 놓아주세요.")
-        except (ValueError, IndexError):
-            print("잘못된 입력입니다. 다시 입력해주세요.")
+    # 돌 그리기
+    for row in range(15):
+        for col in range(15):
+            if board[row][col] == 'X':  # 플레이어 1 (X)
+                pygame.draw.circle(screen, PLAYER1_COLOR, (col * CELL_SIZE + CELL_SIZE // 2, row * CELL_SIZE + CELL_SIZE // 2), CELL_SIZE // 3)
+            elif board[row][col] == 'O':  # 플레이어 2 (O)
+                pygame.draw.circle(screen, PLAYER2_COLOR, (col * CELL_SIZE + CELL_SIZE // 2, row * CELL_SIZE + CELL_SIZE // 2), CELL_SIZE // 3)
 
-# 승리 조건 확인 함수
+    pygame.display.update()
+
+# 사용자 입력 처리
+def place_stone(board, player, x, y):
+    row = y // CELL_SIZE
+    col = x // CELL_SIZE
+
+    if 0 <= row < 15 and 0 <= col < 15 and board[row][col] == '.':
+        board[row][col] = 'X' if player == 1 else 'O'
+        return True
+    return False
+
+# 승리 조건 확인
 def check_winner(board, player):
     stone = 'X' if player == 1 else 'O'
     
@@ -65,19 +83,31 @@ def check_winner(board, player):
     
     return False
 
-# 게임 진행
+# 게임 실행
 def play_game():
-    board = initialize_board()  # 보드 초기화
+    board = initialize_board()
     player = 1  # 첫 번째 플레이어는 'X'
+
+    # 게임 루프
     while True:
-        print_board(board)  # 보드 출력
-        place_stone(board, player)  # 돌 놓기
-        if check_winner(board, player):  # 승리 조건 체크
-            print_board(board)
-            print(f"플레이어 {player}가 이겼습니다!")
-            break
-        # 플레이어 변경
-        player = 2 if player == 1 else 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            # 마우스 클릭 처리
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()  # 마우스 위치
+                if place_stone(board, player, x, y):  # 돌 놓기
+                    if check_winner(board, player):  # 승리 체크
+                        draw_board(board)
+                        print(f"플레이어 {player}가 이겼습니다!")
+                        pygame.time.wait(2000)  # 2초 후 종료
+                        pygame.quit()
+                        sys.exit()
+                    player = 2 if player == 1 else 1  # 플레이어 변경
+
+        draw_board(board)
 
 # 게임 실행
 if __name__ == "__main__":
