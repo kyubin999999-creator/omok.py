@@ -1,3 +1,5 @@
+# 오목 게임 구현
+
 # 15x15 오목판 초기화
 def initialize_board():
     return [['.' for _ in range(15)] for _ in range(15)]  # '.'은 빈칸을 의미
@@ -10,17 +12,15 @@ def print_board(board):
     for i in range(15):
         row_display = f"{i:2} |"  # 행 번호와 왼쪽 경계선
         for j in range(15):
-            if board[i][j] == 'X':  # 플레이어 1 (X)는 빨간색
+            if board[i][j] == 'X':  # 플레이어 1 (X)
                 row_display += f" X |"
-            elif board[i][j] == 'O':  # 플레이어 2 (O)는 파란색
+            elif board[i][j] == 'O':  # 플레이어 2 (O)
                 row_display += f" O |"
             else:
                 row_display += " . |"  # 빈칸은 점으로 표시
         print(row_display)  # 한 행 출력
         print("   +" + "---+" * 15)  # 경계선 출력
-if __name__ == "__main__":
-    board = initialize_board()  # 보드 초기화
-    print_board(board)  # 보드 출력
+
 # 사용자 입력 받기
 def place_stone(board, player):
     while True:
@@ -34,19 +34,7 @@ def place_stone(board, player):
                 print("이미 돌이 놓여진 곳입니다. 다른 곳에 놓아주세요.")
         except (ValueError, IndexError):
             print("잘못된 입력입니다. 다시 입력해주세요.")
-# 게임 진행
-def play_game():
-    board = initialize_board()  # 보드 초기화
-    player = 1  # 첫 번째 플레이어는 'X'
-    while True:
-        print_board(board)  # 보드 출력
-        place_stone(board, player)  # 돌 놓기
-        if check_winner(board, player):  # 승리 조건 체크
-            print_board(board)
-            print(f"플레이어 {player}가 이겼습니다!")
-            break
-        # 플레이어 변경
-        player = 2 if player == 1 else 1
+
 # 승리 조건 확인 함수
 def check_winner(board, player):
     stone = 'X' if player == 1 else 'O'
@@ -76,6 +64,21 @@ def check_winner(board, player):
                 return True
     
     return False
+
+# 게임 진행
+def play_game():
+    board = initialize_board()  # 보드 초기화
+    player = 1  # 첫 번째 플레이어는 'X'
+    while True:
+        print_board(board)  # 보드 출력
+        place_stone(board, player)  # 돌 놓기
+        if check_winner(board, player):  # 승리 조건 체크
+            print_board(board)
+            print(f"플레이어 {player}가 이겼습니다!")
+            break
+        # 플레이어 변경
+        player = 2 if player == 1 else 1
+
 # 게임 실행
 if __name__ == "__main__":
     play_game()
