@@ -1,5 +1,3 @@
-pip install pygame
-python omok_game/omok.py
 import pygame
 import sys
 
@@ -114,4 +112,3 @@ def play_game():
 # 게임 실행
 if __name__ == "__main__":
     play_game()
-
