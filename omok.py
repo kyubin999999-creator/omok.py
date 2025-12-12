@@ -82,4 +82,3 @@ def play_game():
 # 게임 실행
 if __name__ == "__main__":
     play_game()
-python omok.py
