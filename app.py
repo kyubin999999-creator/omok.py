@@ -5,12 +5,12 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("기물 처치 시 강력한 **폭발 이펙트**와 **캐슬링 특수 룰**이 추가된 최고 완성도 버전입니다.")
+st.markdown("현재 턴이 아닌 플레이어의 기물들을 **흐리게 처리**하여 가독성과 비주얼을 극대화했습니다.")
 
 tab1, tab2 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스"])
 
 # ==============================================================================
-# 🗂️ TAB 1: 3D 정식 오목 (기존 완벽판 유지)
+# 🗂️ TAB 1: 3D 정식 오목 (기존 버전 유지)
 # ==============================================================================
 with tab1:
     st.subheader("🥋 프로 규격 15x15 오목 (렌주룰 적용)")
@@ -79,10 +79,10 @@ with tab1:
     components.html(omok_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 2: 3D 타격감 체스 (폭발 파티클 이펙트 + 캐슬링 시스템)
+# 🗂️ TAB 2: 3D 타격감 체스 (비주얼 업데이트 - 상대 턴 기물 흐리게 처리)
 # ==============================================================================
 with tab2:
-    st.subheader("👑 파티클 이펙트 및 캐슬링이 내장된 3D 체스")
+    st.subheader("👑 상대 턴 기물 흐림 처리와 대형 종료 오버레이를 갖춘 3D 체스")
     
     chess_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
@@ -106,15 +106,8 @@ with tab2:
         const C_CELL = cCanvas.width / 8;
         let cTurn = 'w'; let selectedPiece = null; let cWinner = null;
 
-        // 화면 흔들림 및 파티클 변수
-        let shakeTime = 0; let shakeIntensity = 0;
-        let particles = [];
-
-        // 기물 이동 기록 (캐슬링 판정용)
-        let movedPieces = {
-            'wK': false, 'wR_left': false, 'wR_right': false,
-            'bK': false, 'bR_left': false, 'bR_right': false
-        };
+        let shakeTime = 0; let shakeIntensity = 0; let particles = [];
+        let movedPieces = { 'wK': false, 'wR_left': false, 'wR_right': false, 'bK': false, 'bR_left': false, 'bR_right': false };
 
         let cBoard = [
             ['bR','bN','bB','bQ','bK','bB','bN','bR'],
@@ -132,37 +125,19 @@ with tab2:
             'bK':'♚', 'bQ':'♛', 'bR':'♜', 'bB':'♝', 'bN':'♞', 'bP':'♟'
         };
 
-        // --- [이펙트 알고리즘] 화려한 폭발 파티클 생성 함수 ---
         function createExplosion(x, y, pieceType) {
-            // 기물 등급별로 파티클 개수 차등 부여 (왕/퀸은 화려하게!)
-            let count = 20;
-            if (pieceType === 'K' || pieceType === 'Q') count = 55;
-            else if (pieceType === 'R' || pieceType === 'B' || pieceType === 'N') count = 35;
-
-            // 화면 흔들림 강도 부여
-            shakeTime = 12;
-            shakeIntensity = pieceType === 'K' ? 10 : 5;
-
-            // 불꽃 파티클 무작위 사방 비산 생성
+            let count = pieceType === 'K' || pieceType === 'Q' ? 60 : 30;
+            shakeTime = 15; shakeIntensity = pieceType === 'K' ? 15 : 6;
             for (let i = 0; i < count; i++) {
-                let angle = Math.random() * Math.PI * 2;
-                let speed = Math.random() * 4 + 2;
-                let colors = ['#ff4500', '#ff8c00', '#ffd700', '#ffffff', '#e0e0e0']; // 타오르는 불꽃 색조
+                let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 5 + 2;
                 particles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    radius: Math.random() * 4 + 2,
-                    alpha: 1,
-                    decay: Math.random() * 0.03 + 0.015,
-                    color: colors[Math.floor(Math.random() * colors.length)]
+                    x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, radius: Math.random()*4+2, alpha: 1,
+                    decay: Math.random()*0.02+0.015, color: ['#ff4500','#ff8c00','#ffd700','#ffffff'][Math.floor(Math.random()*4)]
                 });
             }
         }
 
-        // --- 정밀 체스 행마법 검사 (캐슬링 특수 알고리즘 결합) ---
-        function isValidMove(sr, sc, tr, tc, piece, isCheckCastling = true) {
+        function isValidMove(sr, sc, tr, tc, piece) {
             if (sr === tr && sc === tc) return false;
             let pType = piece[1]; let pColor = piece[0];
             let target = cBoard[tr][tc];
@@ -172,16 +147,12 @@ with tab2:
             let stepR = dr === 0 ? 0 : dr / Math.abs(dr);
             let stepC = dc === 0 ? 0 : dc / Math.abs(dc);
 
-            // 캐슬링 특수 룰 판정 (킹이 옆으로 2칸 갈 때)
-            if (pType === 'K' && Math.abs(dc) === 2 && dr === 0 && isCheckCastling) {
-                if (movedPieces[pColor + 'K']) return false; // 킹이 움직인 적 없어야 함
-                
-                // 킹사이드 캐슬링 (우측)
+            if (pType === 'K' && Math.abs(dc) === 2 && dr === 0) {
+                if (movedPieces[pColor + 'K']) return false; 
                 if (dc === 2 && sc === 4) {
                     if (movedPieces[pColor + 'R_right']) return false;
                     if (cBoard[sr][5] === '' && cBoard[sr][6] === '') return 'castling_right';
                 }
-                // 퀸사이드 캐슬링 (좌측)
                 if (dc === -2 && sc === 4) {
                     if (movedPieces[pColor + 'R_left']) return false;
                     if (cBoard[sr][1] === '' && cBoard[sr][2] === '' && cBoard[sr][3] === '') return 'castling_left';
@@ -193,7 +164,6 @@ with tab2:
                 if (pType === 'R' && dr !== 0 && dc !== 0) return false;
                 if (pType === 'B' && Math.abs(dr) !== Math.abs(dc)) return false;
                 if (pType === 'Q' && dr !== 0 && dc !== 0 && Math.abs(dr) !== Math.abs(dc)) return false;
-
                 let currR = sr + stepR; let currC = sc + stepC;
                 while (currR !== tr || currC !== tc) {
                     if (cBoard[currR][currC] !== '') return false;
@@ -221,7 +191,6 @@ with tab2:
             return false;
         }
 
-        // --- 체스판 및 실시간 루트 가이드 시각화 ---
         function drawChessBoard() {
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
@@ -235,17 +204,14 @@ with tab2:
                         cCtx.fillStyle = 'rgba(255, 235, 59, 0.4)'; cCtx.fillRect(x, y, C_CELL, C_CELL);
                     }
 
-                    // 이동 및 특수 기술 가이드라인 렌더링
                     if (selectedPiece) {
                         let srcPiece = cBoard[selectedPiece.r][selectedPiece.c];
                         let moveType = isValidMove(selectedPiece.r, selectedPiece.c, r, c, srcPiece);
                         if (moveType) {
                             if (moveType === 'castling_right' || moveType === 'castling_left') {
-                                // 캐슬링 자리는 특별하게 '파란색' 서클로 가이드 명시
                                 cCtx.fillStyle = 'rgba(33, 150, 243, 0.3)'; cCtx.fillRect(x, y, C_CELL, C_CELL);
                                 cCtx.beginPath(); cCtx.arc(x + C_CELL/2, y + C_CELL/2, 7, 0, Math.PI * 2); cCtx.fillStyle = '#1976d2'; cCtx.fill();
                             } else {
-                                // 일반 이동/공격 자리는 '녹색' 서클 가이드 명시
                                 cCtx.fillStyle = 'rgba(76, 175, 80, 0.25)'; cCtx.fillRect(x, y, C_CELL, C_CELL);
                                 cCtx.beginPath(); cCtx.arc(x + C_CELL/2, y + C_CELL/2, 6, 0, Math.PI * 2); cCtx.fillStyle = '#2e7d32'; cCtx.fill();
                             }
@@ -255,6 +221,7 @@ with tab2:
             }
         }
 
+        // --- ⚡ [업데이트] 현재 턴인 기물은 선명하게, 반대편 기물은 흐리게(Ghost 효과) 렌더링 ---
         function drawPieces() {
             cCtx.textAlign = 'center'; cCtx.textBaseline = 'middle'; cCtx.font = 'bold 36px "Segoe UI Symbol", sans-serif';
             for (let r = 0; r < 8; r++) {
@@ -262,54 +229,70 @@ with tab2:
                     let p = cBoard[r][c];
                     if (p !== '') {
                         let x = c * C_CELL + C_CELL / 2; let y = r * C_CELL + C_CELL / 2;
-                        cCtx.save(); cCtx.shadowColor = 'rgba(0, 0, 0, 0.4)'; cCtx.shadowBlur = 4; cCtx.shadowOffsetX = 2; cCtx.shadowOffsetY = 3;
+                        cCtx.save();
+                        
+                        // 현재 턴의 주인이 아니면 기물 투명도를 30% 수준으로 확 낮춰 흐릿하게 표기
+                        if (p[0] !== cTurn && !cWinner) {
+                            cCtx.globalAlpha = 0.32;
+                        } else {
+                            cCtx.globalAlpha = 1.0;
+                        }
+
+                        cCtx.shadowColor = 'rgba(0, 0, 0, 0.4)'; cCtx.shadowBlur = 4; cCtx.shadowOffsetX = 2; cCtx.shadowOffsetY = 3;
                         cCtx.fillStyle = p[0] === 'w' ? '#ffffff' : '#1e1e1e';
+                        
                         if(p[0]==='b') { cCtx.strokeStyle = '#fff'; cCtx.lineWidth = 1; cCtx.strokeText(pieceIcons[p], x, y); }
                         else { cCtx.strokeStyle = '#000'; cCtx.lineWidth = 1; cCtx.strokeText(pieceIcons[p], x, y); }
-                        cCtx.fillText(pieceIcons[p], x, y); cCtx.restore();
+                        
+                        cCtx.fillText(pieceIcons[p], x, y);
+                        cCtx.restore();
                     }
                 }
             }
         }
 
-        // --- 파티클 드로잉 및 업데이트 프레임 워크 ---
         function updateAndDrawParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
                 if (p.alpha <= 0) { particles.splice(i, 1); continue; }
-                cCtx.save();
-                cCtx.globalAlpha = p.alpha;
-                cCtx.shadowBlur = 8; cCtx.shadowColor = p.color; // 발광 이펙트 주입
-                cCtx.beginPath(); cCtx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
-                cCtx.fillStyle = p.color; cCtx.fill();
-                cCtx.restore();
+                cCtx.save(); cCtx.globalAlpha = p.alpha; cCtx.shadowBlur = 8; cCtx.shadowColor = p.color;
+                cCtx.beginPath(); cCtx.arc(p.x, p.y, p.radius, 0, Math.PI*2); cCtx.fillStyle = p.color; cCtx.fill(); cCtx.restore();
             }
         }
 
-        // --- 메인 게임 루프 (화면 흔들림 통합 인터페이스) ---
+        function drawGameOverOverlay() {
+            if (!cWinner) return;
+            let overlayGrad = cCtx.createRadialGradient(cCanvas.width/2, cCanvas.height/2, 50, cCanvas.width/2, cCanvas.height/2, cCanvas.width*0.7);
+            overlayGrad.addColorStop(0, 'rgba(15, 23, 42, 0.88)'); overlayGrad.addColorStop(1, 'rgba(2, 6, 23, 0.99)');
+            cCtx.fillStyle = overlayGrad; cCtx.fillRect(0, 0, cCanvas.width, cCanvas.height);
+
+            cCtx.textAlign = 'center'; cCtx.textBaseline = 'middle';
+            cCtx.save(); cCtx.shadowColor = '#ef4444'; cCtx.shadowBlur = 20;
+            cCtx.font = 'bold 54px "Impact", "Arial Black", sans-serif'; cCtx.fillStyle = '#ef4444';
+            cCtx.fillText('GAME OVER', cCanvas.width / 2, cCanvas.height / 2 - 40); cCtx.restore();
+
+            cCtx.save(); cCtx.font = 'bold 22px "Malgun Gothic", sans-serif'; cCtx.fillStyle = '#f8fafc';
+            cCtx.shadowColor = 'rgba(255, 255, 255, 0.3)'; cCtx.shadowBlur = 4;
+            let winnerText = cWinner === 'w' ? '👑 WHITE PLAYER WIN 👑' : '👑 BLACK PLAYER WIN 👑';
+            cCtx.fillText(winnerText, cCanvas.width / 2, cCanvas.height / 2 + 30);
+            
+            cCtx.font = '14px "Malgun Gothic", sans-serif'; cCtx.fillStyle = '#94a3b8';
+            cCtx.fillText('상단의 [게임 리셋] 버튼을 누르면 재경기가 가능합니다.', cCanvas.width / 2, cCanvas.height / 2 + 80); cCtx.restore();
+        }
+
         function gameLoop() {
             cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
             cCtx.save();
-
-            // 타격 누적 프레임에 맞춰 캔버스를 무작위로 흔듦
-            if (shakeTime > 0) {
-                let dx = (Math.random() - 0.5) * shakeIntensity;
-                let dy = (Math.random() - 0.5) * shakeIntensity;
-                cCtx.translate(dx, dy);
-                shakeTime--;
-            }
-
+            if (shakeTime > 0) { cCtx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeTime--; }
             drawChessBoard(); drawPieces();
-            cCtx.restore(); // 흔들림 효과 복구
-
+            cCtx.restore();
             updateAndDrawParticles();
+            drawGameOverOverlay();
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 마우스 클릭 처리 및 특수 액션 결합 ---
         cCanvas.addEventListener('click', function(e) {
-            if (cWinner) return;
+            if (cWinner) return; 
             const rect = cCanvas.getBoundingClientRect();
             const c = Math.floor((e.clientX - rect.left) / C_CELL);
             const r = Math.floor((e.clientY - rect.top) / C_CELL);
@@ -322,50 +305,36 @@ with tab2:
                 let moveType = isValidMove(selectedPiece.r, selectedPiece.c, r, c, srcPiece);
 
                 if (moveType) {
-                    let pColor = srcPiece[0];
-                    let targetPiece = cBoard[r][c];
+                    let pColor = srcPiece[0]; let targetPiece = cBoard[r][c];
 
-                    // 캐슬링 최종 성립 발동 시
                     if (moveType === 'castling_right') {
-                        cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = '';
-                        cBoard[r][5] = pColor + 'R'; cBoard[r][7] = ''; // 우측 룩 자동 소환
+                        cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = ''; cBoard[r][5] = pColor + 'R'; cBoard[r][7] = '';
                     } else if (moveType === 'castling_left') {
-                        cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = '';
-                        cBoard[r][3] = pColor + 'R'; cBoard[r][0] = ''; // 좌측 룩 자동 소환
+                        cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = ''; cBoard[r][3] = pColor + 'R'; cBoard[r][0] = '';
                     } else {
-                        // 일반 행마 및 캡처 (처단)
                         if (targetPiece !== '') {
-                            // 폭발 발생 위치 계산
-                            let expX = c * C_CELL + C_CELL / 2;
-                            let expY = r * C_CELL + C_CELL / 2;
-                            createExplosion(expX, expY, targetPiece[1]);
-
+                            createExplosion(c*C_CELL+C_CELL/2, r*C_CELL+C_CELL/2, targetPiece[1]);
                             if (targetPiece[1] === 'K') cWinner = cTurn;
                         }
                         cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = '';
                     }
 
-                    // 이동된 기물의 첫 기동 기록 업데이트
-                    if (srcPiece === 'wK') movedPieces['wK'] = true;
-                    if (srcPiece === 'bK') movedPieces['bK'] = true;
-                    if (selectedPiece.r === 7 && selectedPiece.c === 0) movedPieces['wR_left'] = true;
-                    if (selectedPiece.r === 7 && selectedPiece.c === 7) movedPieces['wR_right'] = true;
-                    if (selectedPiece.r === 0 && selectedPiece.c === 0) movedPieces['bR_left'] = true;
-                    if (selectedPiece.r === 0 && selectedPiece.c === 7) movedPieces['bR_right'] = true;
+                    if (srcPiece === 'wK') movedPieces['wK'] = true; if (srcPiece === 'bK') movedPieces['bK'] = true;
+                    if (selectedPiece.r === 7 && selectedPiece.c === 0) movedPieces['wR_left'] = true; if (selectedPiece.r === 7 && selectedPiece.c === 7) movedPieces['wR_right'] = true;
+                    if (selectedPiece.r === 0 && selectedPiece.c === 0) movedPieces['bR_left'] = true; if (selectedPiece.r === 0 && selectedPiece.c === 7) movedPieces['bR_right'] = true;
 
                     selectedPiece = null;
 
                     if (cWinner) {
                         cStatus.style.background = '#dcfce7'; cStatus.style.color = '#15803d';
-                        cStatus.innerHTML = `🎉 대국 종료: ${cWinner === 'w' ? '백돌(White)' : '흑돌(Black)'} 플레이어 전술 대승!`;
+                        cStatus.innerHTML = `🎉 대국 종료! ${cWinner === 'w' ? '백돌(White)' : '흑돌(Black)'} 플레이어가 승리했습니다!`;
                     } else {
                         cTurn = cTurn === 'w' ? 'b' : 'w';
-                        cStatus.style.background = cTurn === 'w' ? '#f3e8ff' : '#1e293b'; cStatus.style.color = cTurn === 'w' ? '#6b21a8' : '#f8fafc';
+                        cStatus.style.background = cTurn === 'w' ? '#f3e8ff' : '#1e293b'; cTurn === 'w' ? cStatus.style.color = '#6b21a8' : cStatus.style.color = '#f8fafc';
                         cStatus.innerHTML = cTurn === 'w' ? "⚪ 백돌(White) 차례입니다" : "⚫ 흑돌(Black) 차례입니다";
                     }
                 } else {
-                    if (clickedPiece !== '' && clickedPiece[0] === cTurn) { selectedPiece = {r, c}; } 
-                    else { selectedPiece = null; }
+                    if (clickedPiece !== '' && clickedPiece[0] === cTurn) { selectedPiece = {r, c}; } else { selectedPiece = null; }
                 }
             }
         });
@@ -381,13 +350,7 @@ with tab2:
             cStatus.style.background = '#f3e8ff'; cStatus.style.color = '#6b21a8'; cStatus.innerHTML = "⚪ 백돌(White) 선공 차례입니다";
         });
 
-        // 애니메이션 루프 트리거 실행
         gameLoop();
     </script>
     """
     components.html(chess_js, height=580)
-    st.markdown("""
-    ### 🛡️ 특수 기술: 캐슬링(Castling) 사용법
-    * **조건:** 킹(K)과 해당 룩(R)이 게임 시작 후 **단 한 번도 움직이지 않았고**, 둘 사이의 경로에 **다른 기물이 없어야** 합니다.
-    * **방법:** 킹을 클릭한 뒤, **양옆으로 2칸 떨어진 파란색 가이드 타일**을 클릭하면 킹의 은신과 함께 룩이 킹을 엄호하며 자리를 바꿉니다.
-    """)
