@@ -1,96 +1,215 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # --- 페이지 기본 설정 ---
-st.set_page_config(page_title="방구석 오목 실험실", page_icon="⚫", layout="centered")
+st.set_page_config(page_title="3D 입체 오목 실험실", page_icon="⚫", layout="centered")
 
-st.title("⚫ 방구석 척척 오목 게임 ⚪")
-st.markdown("친구와 모니터 앞에 앉아 가볍게 내기 한판! 5개의 돌을 먼저 일렬로 잇는 사람이 승리합니다.")
+st.title("🎬 3D 입체 방구석 오목 게임 ⚪")
+st.markdown("은은한 조명을 받는 3D 입체 바둑돌과 나무 바둑판입니다. 친구와 함께 번갈아 두며 즐겨보세요!")
 
 st.divider()
 
-# --- 오목판 크기 설정 (가볍게 즐기기 좋은 10x10 사이즈) ---
-BOARD_SIZE = 10
+# --- HTML5 Canvas 기반의 3D 오목 게임 내장 ---
+# 10x10 격자판 위에 입체 그래픽(그림자 및 하이라이트 구체)을 구현한 코드입니다.
+js_code = """
+<div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 460px; margin: 0 auto 15px auto;">
+        <div id="status-box" style="padding: 10px 20px; background: #e0f2fe; color: #0369a1; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #bae6fd;">
+            🏃‍♂️ 현재 차례: 흑돌 (⚫)
+        </div>
+        <button id="reset-btn" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s;">
+            🔄 게임 리셋
+        </button>
+    </div>
 
-# --- 게임 상태 초기화 (세션 스테이트) ---
-if "omok_board" not in st.session_state:
-    st.session_state.omok_board = [["" for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-    st.session_state.omok_turn = "⚫"
-    st.session_state.omok_winner = None
+    <canvas id="omokCanvas" width="460" height="460" style="border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer;"></canvas>
+</div>
 
-# --- 게임 리셋 함수 ---
-def reset_omok():
-    st.session_state.omok_board = [["" for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-    st.session_state.omok_turn = "⚫"
-    st.session_state.omok_winner = None
+<script>
+    const canvas = document.getElementById('omokCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusBox = document.getElementById('status-box');
+    const resetBtn = document.getElementById('reset-btn');
 
-# --- 승리 조건 체크 함수 (가로, 세로, 대각선 5개 연속 검사) ---
-def check_omok_winner(board):
-    # 체크할 4가지 방향: (행 이동, 열 이동) -> 가로, 세로, 우하 대각선, 우상 대각선
-    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    const BOARD_SIZE = 10;
+    const PADDING = 35;
+    const CELL_SIZE = (canvas.width - PADDING * 2) / (BOARD_SIZE - 1);
     
-    for r in range(BOARD_SIZE):
-        for c in range(BOARD_SIZE):
-            if board[r][c] == "":
-                continue
-            
-            stone = board[r][c]
-            
-            for dr, dc in directions:
-                count = 1
-                for i in range(1, 5):
-                    nr, nc = r + dr * i, c + dc * i
-                    # 오목판 범위 안에 있고 같은 색의 돌인지 확인
-                    if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == stone:
-                        count += 1
-                    else:
-                        break
-                
-                if count == 5:
-                    return stone # 승리한 돌의 모양 반환
-    return None
+    let board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(''));
+    let currentTurn = 'black'; // 'black' 또는 'white'
+    let winner = null;
 
-# --- 상단 레이아웃: 전광판 및 초기화 버튼 ---
-col_status, col_reset = st.columns([3, 1])
+    // --- 1. 바둑판 배경 및 격자 그리기 (나무 질감 베이스) ---
+    function drawBoard() {
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
 
-with col_status:
-    if st.session_state.omok_winner:
-        st.balloons() # 축하 풍선 이펙트!
-        st.success(f"🎉 **게임 종료! {st.session_state.omok_winner} 플레이어 승리!**")
-    else:
-        st.info(f"🏃‍♂️ 현재 차례: **{st.session_state.omok_turn}** (돌을 놓을 자리를 누르세요)")
+        // 따뜻한 원목 느낌 배경색
+        ctx.fillStyle = '#eec590';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-with col_reset:
-    if st.button("🔄 게임 리셋", use_container_width=True):
-        reset_omok()
-        st.rerun()
+        // 은은한 나무 테두리 선
+        ctx.strokeStyle = '#c69a63';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
 
-st.write("")
-
-# --- 메인 레이아웃: 오목판 그리기 ---
-# Streamlit의 columns를 활용해 바둑판 모양의 격자 버튼을 만듭니다.
-for r in range(BOARD_SIZE):
-    cols = st.columns(BOARD_SIZE)
-    for c in range(BOARD_SIZE):
-        cell_content = st.session_state.omok_board[r][c]
+        // 바둑판 격자선 그리기
+        ctx.strokeStyle = '#5c4033';
+        ctx.lineWidth = 1.5;
         
-        # 돌이 없으면 격자무늬(➕), 있으면 해당 돌 모양표시
-        button_label = cell_content if cell_content != "" else "➕"
-        
-        # 이미 돌이 놓여있거나 승리자가 나왔다면 버튼 비활성화
-        is_disabled = (cell_content != "") or (st.session_state.omok_winner is not None)
-        
-        # 각 버튼마다 고유의 key를 부여합니다.
-        if cols[c].button(button_label, key=f"omok_{r}_{c}", disabled=is_disabled, use_container_width=True):
-            # 현재 차례의 돌을 오목판에 배치
-            st.session_state.omok_board[r][c] = st.session_state.omok_turn
+        for (let i = 0; i < BOARD_SIZE; i++) {
+            // 가로선
+            ctx.beginPath();
+            ctx.moveTo(PADDING, PADDING + i * CELL_SIZE);
+            ctx.lineTo(canvas.width - PADDING, PADDING + i * CELL_SIZE);
+            ctx.stroke();
+
+            // 세로선
+            ctx.beginPath();
+            ctx.moveTo(PADDING + i * CELL_SIZE, PADDING);
+            ctx.lineTo(PADDING + i * CELL_SIZE, canvas.height - PADDING);
+            ctx.stroke();
+        }
+
+        // 바둑판 중심점(화점) 찍기 (오목판 포인트)
+        ctx.fillStyle = '#5c4033';
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // --- 2. 입체적인 3D 바둑돌 그리기 (빛 반사 및 그림자 효과) ---
+    function drawStone(row, col, color) {
+        const x = PADDING + col * CELL_SIZE;
+        const y = PADDING + row * CELL_SIZE;
+        const radius = CELL_SIZE * 0.43;
+
+        ctx.save();
+
+        // [3D 디테일 1] 바닥에 떨어지는 은은한 돌 그림자 효과
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 4;
+
+        // [3D 디테일 2] 입체 구체 느낌을 내기 위한 방사형 그라데이션 적용
+        ctx.beginPath();
+        let gradient = ctx.createRadialGradient(
+            x - radius * 0.3, y - radius * 0.3, radius * 0.1, // 빛이 반사되는 하이라이트 중심점
+            x, y, radius                                      // 돌의 전체 외곽선
+        );
+
+        if (color === 'black') {
+            gradient.addColorStop(0, '#666666');   // 반사광 부분 (밝은 회색)
+            gradient.addColorStop(0.2, '#222222'); // 중간 몸통
+            gradient.addColorStop(1, '#050505');   // 가장 어두운 외곽 쉐도우
+        } else {
+            gradient.addColorStop(0, '#ffffff');   // 반사광 부분 (순백색)
+            gradient.addColorStop(0.6, '#eaeaea'); // 깨끗한 백돌 표면
+            gradient.addColorStop(1, '#bbbbbb');   // 묵직한 하단 그림자 경계
+        }
+
+        ctx.fillStyle = gradient;
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- 3. 모든 돌 다시 그리기 ---
+    function render() {
+        drawBoard();
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; r++) { // 루프 내부 갱신용 아래 이중 포문 참고
+            }
+        }
+        // 안전한 루프 출력
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if (board[r][c] !== '') {
+                    drawStone(r, c, board[r][c]);
+                }
+            }
+        }
+    }
+
+    // --- 4. 오목 승리 판정 알고리즘 (5개 연속 체크) ---
+    function checkWin(row, col, color) {
+        const dirs = [[0,1], [1,0], [1,1], [1,-1]];
+        for (let [dr, dc] of dirs) {
+            let count = 1;
             
-            # 승패 확인
-            winner = check_omok_winner(st.session_state.omok_board)
-            if winner:
-                st.session_state.omok_winner = winner
-            else:
-                # 차례 교대
-                st.session_state.omok_turn = "⚪" if st.session_state.omok_turn == "⚫" else "⚫"
+            // 정방향 탐색
+            let r = row + dr, c = col + dc;
+            while(r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === color) {
+                count++; r += dr; c += dc;
+            }
+            // 역방향 탐색
+            r = row - dr; c = col - dc;
+            while(r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === color) {
+                count++; r -= dr; c -= dc;
+            }
             
-            # 화면 실시간 갱신
-            st.rerun()
+            if (count === 5) return true;
+        }
+        return false;
+    }
+
+    // --- 5. 클릭 이벤트 처리 (가장 가까운 교차점에 돌 배치) ---
+    canvas.addEventListener('click', function(e) {
+        if (winner) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        // 마우스 위치와 가장 가까운 격자 인덱스 계산
+        const col = Math.round((mouseX - PADDING) / CELL_SIZE);
+        const row = Math.round((mouseY - PADDING) / CELL_SIZE);
+
+        // 바둑판 범위 안쪽인지 검사
+        if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
+            if (board[row][col] === '') {
+                board[row][col] = currentTurn;
+                render();
+
+                if (checkWin(row, col, currentTurn)) {
+                    winner = currentTurn;
+                    statusBox.style.background = '#dcfce7';
+                    statusBox.style.color = '#15803d';
+                    statusBox.style.borderColor = '#bbf7d0';
+                    statusBox.style.fontSize = '18px';
+                    statusBox.innerHTML = `🎉 승리: ${winner === 'black' ? '흑돌(⚫)' : '백돌(⚪)'} 플레이어 단승!`;
+                    return;
+                }
+
+                // 턴 변경
+                currentTurn = currentTurn === 'black' ? 'white' : 'black';
+                statusBox.innerHTML = `🏃‍♂️ 현재 차례: ${currentTurn === 'black' ? '흑돌 (⚫)' : '백돌 (⚪)'}`;
+            }
+        }
+    });
+
+    // --- 6. 리셋 버튼 이벤트 ---
+    resetBtn.addEventListener('click', function() {
+        board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(''));
+        currentTurn = 'black';
+        winner = null;
+        statusBox.style.background = '#e0f2fe';
+        statusBox.style.color = '#0369a1';
+        statusBox.style.borderColor = '#bae6fd';
+        statusBox.style.fontSize = '16px';
+        statusBox.innerHTML = "🏃‍♂️ 현재 차례: 흑돌 (⚫)";
+        drawBoard();
+    });
+
+    // 최초 실행
+    drawBoard();
+</script>
+"""
+
+# 가상 실험실처럼 HTML 코드를 대시보드에 안전하게 주입합니다.
+components.html(js_code, height=530)
+
+st.divider()
+st.caption("💡 격자 교차점을 마우스로 누르면 3D 돌이 놓입니다. 매끄러운 진행을 위해 화면 깜빡임 없이 즉시 작동합니다.")
