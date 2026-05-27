@@ -10,7 +10,6 @@ st.markdown("은은한 조명을 받는 3D 입체 바둑돌과 나무 바둑판�
 st.divider()
 
 # --- HTML5 Canvas 기반의 3D 오목 게임 내장 ---
-# 10x10 격자판 위에 입체 그래픽(그림자 및 하이라이트 구체)을 구현한 코드입니다.
 js_code = """
 <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 460px; margin: 0 auto 15px auto;">
@@ -39,7 +38,7 @@ js_code = """
     let currentTurn = 'black'; // 'black' 또는 'white'
     let winner = null;
 
-    // --- 1. 바둑판 배경 및 격자 그리기 (나무 질감 베이스) ---
+    // --- 1. 바둑판 배경 및 격자 그리기 ---
     function drawBoard() {
         ctx.shadowBlur = 0;
         ctx.shadowOffsetX = 0;
@@ -72,14 +71,14 @@ js_code = """
             ctx.stroke();
         }
 
-        // 바둑판 중심점(화점) 찍기 (오목판 포인트)
+        // 바둑판 중심점(화점) 찍기
         ctx.fillStyle = '#5c4033';
         ctx.beginPath();
         ctx.arc(canvas.width / 2, canvas.height / 2, 4, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // --- 2. 입체적인 3D 바둑돌 그리기 (빛 반사 및 그림자 효과) ---
+    // --- 2. 입체적인 3D 바둑돌 그리기 ---
     function drawStone(row, col, color) {
         const x = PADDING + col * CELL_SIZE;
         const y = PADDING + row * CELL_SIZE;
@@ -87,27 +86,27 @@ js_code = """
 
         ctx.save();
 
-        // [3D 디테일 1] 바닥에 떨어지는 은은한 돌 그림자 효과
+        // 바닥에 떨어지는 은은한 돌 그림자 효과
         ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
         ctx.shadowBlur = 6;
         ctx.shadowOffsetX = 3;
         ctx.shadowOffsetY = 4;
 
-        // [3D 디테일 2] 입체 구체 느낌을 내기 위한 방사형 그라데이션 적용
+        // 입체 구체 느낌을 내기 위한 방사형 그라데이션 적용
         ctx.beginPath();
         let gradient = ctx.createRadialGradient(
-            x - radius * 0.3, y - radius * 0.3, radius * 0.1, // 빛이 반사되는 하이라이트 중심점
-            x, y, radius                                      // 돌의 전체 외곽선
+            x - radius * 0.3, y - radius * 0.3, radius * 0.1, // 하이라이트 빛점
+            x, y, radius                                      // 돌 외곽선
         );
 
         if (color === 'black') {
-            gradient.addColorStop(0, '#666666');   // 반사광 부분 (밝은 회색)
-            gradient.addColorStop(0.2, '#222222'); // 중간 몸통
-            gradient.addColorStop(1, '#050505');   // 가장 어두운 외곽 쉐도우
+            gradient.addColorStop(0, '#666666');   
+            gradient.addColorStop(0.2, '#222222'); 
+            gradient.addColorStop(1, '#050505');   
         } else {
-            gradient.addColorStop(0, '#ffffff');   // 반사광 부분 (순백색)
-            gradient.addColorStop(0.6, '#eaeaea'); // 깨끗한 백돌 표면
-            gradient.addColorStop(1, '#bbbbbb');   // 묵직한 하단 그림자 경계
+            gradient.addColorStop(0, '#ffffff');   
+            gradient.addColorStop(0.6, '#eaeaea'); 
+            gradient.addColorStop(1, '#bbbbbb');   
         }
 
         ctx.fillStyle = gradient;
@@ -116,14 +115,9 @@ js_code = """
         ctx.restore();
     }
 
-    // --- 3. 모든 돌 다시 그리기 ---
+    // --- 3. 모든 돌 다시 그리기 (오타 수정 완료!) ---
     function render() {
         drawBoard();
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            for (let c = 0; c < BOARD_SIZE; r++) { // 루프 내부 갱신용 아래 이중 포문 참고
-            }
-        }
-        // 안전한 루프 출력
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 if (board[r][c] !== '') {
@@ -133,7 +127,7 @@ js_code = """
         }
     }
 
-    // --- 4. 오목 승리 판정 알고리즘 (5개 연속 체크) ---
+    // --- 4. 오목 승리 판정 알고리즘 ---
     function checkWin(row, col, color) {
         const dirs = [[0,1], [1,0], [1,1], [1,-1]];
         for (let [dr, dc] of dirs) {
@@ -163,11 +157,9 @@ js_code = """
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // 마우스 위치와 가장 가까운 격자 인덱스 계산
         const col = Math.round((mouseX - PADDING) / CELL_SIZE);
         const row = Math.round((mouseY - PADDING) / CELL_SIZE);
 
-        // 바둑판 범위 안쪽인지 검사
         if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
             if (board[row][col] === '') {
                 board[row][col] = currentTurn;
@@ -179,13 +171,12 @@ js_code = """
                     statusBox.style.color = '#15803d';
                     statusBox.style.borderColor = '#bbf7d0';
                     statusBox.style.fontSize = '18px';
-                    statusBox.innerHTML = `🎉 승리: ${winner === 'black' ? '흑돌(⚫)' : '백돌(⚪)'} 플레이어 단승!`;
+                    statusBox.innerHTML = `🎉 승리: ${winner === 'black' ? '흑돌(⚫)' : '백돌(⚪)'} 플레이어 승리!`;
                     return;
                 }
 
-                // 턴 변경
                 currentTurn = currentTurn === 'black' ? 'white' : 'black';
-                statusBox.innerHTML = `🏃‍♂️ 현재 차례: ${currentTurn === 'black' ? '흑돌 (⚫)' : '백돌 (⚪)'}`;
+                statusBox.innerHTML = `跑‍♂️ 현재 차례: ${currentTurn === 'black' ? '흑돌 (⚫)' : '백돌 (⚪)'}`;
             }
         }
     });
@@ -208,8 +199,7 @@ js_code = """
 </script>
 """
 
-# 가상 실험실처럼 HTML 코드를 대시보드에 안전하게 주입합니다.
 components.html(js_code, height=530)
 
 st.divider()
-st.caption("💡 격자 교차점을 마우스로 누르면 3D 돌이 놓입니다. 매끄러운 진행을 위해 화면 깜빡임 없이 즉시 작동합니다.")
+st.caption("💡 선과 선이 만나는 교차점 근처를 누르면 자석처럼 착 달라붙으며 3D 바둑돌이 놓입니다.")
