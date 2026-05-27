@@ -109,63 +109,86 @@ js_code = """
         return false;
     }
 
-    // --- 4. 🔥 흑돌 금수 규칙 (33 및 44) 판정 알고리즘 ---
-    function checkForbiddenMove(row, col, color) {
-        if (color !== 'black') return { forbidden: false, msg: '' }; 
-
+    // --- 4. 🛠️ 새롭고 확실한 33/44 열린 선 카운팅 알고리즘 ---
+    // 특정 자리에 돌을 놓았을 때 활성화되는 '열린 n'의 개수를 세어줍니다.
+    function countOpenLines(row, col, color, targetCount) {
         const dirs = [[0,1], [1,0], [1,1], [1,-1]];
-        let openThreeCount = 0;
-        let fourCount = 0;
-
-        // 시뮬레이션을 위해 임시 착수
-        board[row][col] = color;
+        let lineCount = 0;
 
         for (let [dr, dc] of dirs) {
-            let line = Array(9).fill('');
-            for (let i = -4; i <= 4; i++) {
-                let r = row + dr * i;
-                let c = col + dc * i;
-                if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
-                    line[i + 4] = board[r][c];
-                } else {
-                    line[i + 4] = 'wall';
-                }
-            }
+            let segments = [];
+            // 해당 방향축으로 총 5개 연속이 만들어질 수 있는 모든 5칸 짜리 범위를 조사
+            for (let start = -4; start <= 0; start++) {
+                let match = 0;
+                let emptySpaces = [];
+                let hasOpponentOrWall = false;
 
-            let lineStr = line.map(v => v === '' ? '.' : (v === 'black' ? 'X' : 'O')).join('');
+                for (let i = 0; i < 5; i++) {
+                    let r = row + dr * (start + i);
+                    let c = col + dc * (start + i);
 
-            // [A] 열린 3 (33 검사용 활구 감지)
-            if (lineStr.includes('.XXX.') || lineStr.includes('.X.XX.') || lineStr.includes('.XX.X.')) {
-                openThreeCount++;
-            }
-
-            // [B] 4 (44 검사용 모든 4 구조 감지: 닫힌 4, 열린 4 모두 포함)
-            // .XXXX. (열린 4) 또는 OXXXX. / .XXXXO / X.XXX / XX.XX / XXX.X (닫힌 4 계열)
-            // 이 중 한 곳만 더 두면 5가 완성되는 상태를 '4'라고 합니다.
-            let isFour = false;
-            // 9칸짜리 문자열에서 돌 하나를 뺐을 때 완벽한 연속 4개가 되는 변형 알고리즘 적용
-            for (let i = 0; i < 9; i++) {
-                if (line[i] === '') {
-                    // 빈 공간에 가상으로 돌을 하나 더 놓았을 때 5개가 연속되는지 체크
-                    line[i] = 'black';
-                    let tempStr = line.map(v => v === '' ? '.' : (v === 'black' ? 'X' : 'O')).join('');
-                    if (tempStr.includes('XXXXX')) {
-                        isFour = true;
+                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                        if (board[r][c] === color) {
+                            match++;
+                        } else if (board[r][c] === '') {
+                            emptySpaces.push({r, c});
+                        } else {
+                            hasOpponentOrWall = true;
+                            break;
+                        }
+                    } else {
+                        hasOpponentOrWall = true;
+                        break;
                     }
-                    line[i] = ''; // 원상 복구
+                }
+
+                // 상대방 돌이나 벽으로 막히지 않고, 우리 돌이 원하는 개수만큼 들어가 있는 상태
+                if (!hasOpponentOrWall && match === targetCount) {
+                    // 양 끝이 열려있는지(활구인지) 추가 체크를 위한 검증
+                    let leftR = row + dr * (start - 1);
+                    let leftC = col + dc * (start - 1);
+                    let rightR = row + dr * (start + 5);
+                    let rightC = col + dc * (start + 5);
+
+                    let leftOpen = leftR >= 0 && leftR < BOARD_SIZE && leftC >= 0 && leftC < BOARD_SIZE && board[leftR][leftC] === '';
+                    let rightOpen = rightR >= 0 && rightR < BOARD_SIZE && rightC >= 0 && rightC < BOARD_SIZE && board[rightR][rightC] === '';
+                    
+                    if (targetCount === 3 && leftOpen && rightOpen) {
+                        // 33은 '양쪽이 모두 열린 3'이어야 금수입니다.
+                        if (!segments.includes(dr + "-" + dc)) {
+                            segments.push(dr + "-" + dc);
+                        }
+                    } else if (targetCount === 4) {
+                        // 44는 한쪽만 열려있어도(닫힌 4 포함) 하나 더 두면 5가 되므로 무조건 금수입니다.
+                        if (!segments.includes(dr + "-" + dc)) {
+                            segments.push(dr + "-" + dc);
+                        }
+                    }
                 }
             }
-            if (isFour) fourCount++;
+            lineCount += segments.length;
         }
+        return lineCount;
+    }
 
-        // 임시 착수 해제
+    function checkForbiddenMove(row, col, color) {
+        if (color !== 'black') return { forbidden: false, msg: '' };
+
+        // 1. 임시 착수
+        board[row][col] = color;
+
+        // 2. 이 자리를 두어 동시에 만들어진 '열린 3'과 '4'의 개수를 파악
+        // 자기가 방금 놓은 돌을 포함하여 계산하므로 targetCount는 각각 3과 4가 됩니다.
+        let threes = countOpenLines(row, col, 'black', 3);
+        let fours = countOpenLines(row, col, 'black', 4);
+
+        // 3. 원상 복구
         board[row][col] = '';
 
-        // 최종 판단
-        if (openThreeCount >= 2) {
+        if (threes >= 2) {
             return { forbidden: true, msg: "⚠️ [금수] 흑돌은 33(쌍삼) 자리에 둘 수 없습니다!" };
         }
-        if (fourCount >= 2) {
+        if (fours >= 2) {
             return { forbidden: true, msg: "⚠️ [금수] 흑돌은 44(쌍사) 자리에 둘 수 없습니다!" };
         }
 
@@ -186,15 +209,15 @@ js_code = """
         if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
             if (board[row][col] === '') {
                 
-                // 금수 규칙 체크 (33, 44)
+                // 금수 규칙 실시간 작동 체크
                 let check = checkForbiddenMove(row, col, currentTurn);
                 if (check.forbidden) {
                     statusBox.style.background = '#fee2e2'; statusBox.style.color = '#991b1b'; statusBox.style.borderColor = '#fca5a5';
                     statusBox.innerHTML = check.msg;
-                    return;
+                    return; // 함수를 즉시 종료하여 돌이 안 놓이게 막음
                 }
 
-                // 돌 놓기
+                // 통과되면 돌 놓기
                 board[row][col] = currentTurn;
                 render();
 
