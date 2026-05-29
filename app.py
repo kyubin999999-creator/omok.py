@@ -709,7 +709,7 @@ with tab5:
             else if (e.keyCode === 39) { playerMove(1); }   // Right Arrow
             else if (e.keyCode === 40) { playerDrop(); }    // Down Arrow
             else if (e.keyCode === 38) { playerRotate(); }  // Up Arrow
-            else if (e.keyCode === 32) { playerHardDrop(); }// Spacebar
+            else if (e.keyCode === 32) { playerDrop(); }      // Spacebar (적당히 빠른 하강)
         });
 
         resetBtn.addEventListener('click', () => {
