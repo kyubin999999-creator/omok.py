@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("오목, 체스, 체커에 이어 무지개 퍼펙트 클리어 이펙트와 **연속 콤보 시스템**이 추가된 **블록 블라스트(Block Blast)**까지 탑재되었습니다!")
+st.markdown("오목, 체스, 체커에 이어 무지개 퍼펙트 클리어 이펙트와 **턴제 연속 콤보 시스템**이 추가된 **블록 블라스트(Block Blast)**까지 탑재되었습니다!")
 
 # --- 4개의 탭 구성 ---
 tab1, tab2, tab3, tab4 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커", "🌈 블록 블라스트"])
@@ -367,7 +367,7 @@ with tab3:
     components.html(checkers_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 4: 블록 블라스트 (🌈 무지개 폭발 + 🏆 최고 점수 + 🔥 콤보 시스템 추가)
+# 🗂️ TAB 4: 블록 블라스트 (🌈 무지개 폭발 + 🏆 최고 점수 + 🔥 턴제 콤보 시스템 추가)
 # ==============================================================================
 with tab4:
     st.subheader("🧱 무한 중독 타격 퍼즐: 블록 블라스트 마스터")
@@ -402,6 +402,7 @@ with tab4:
         let comboCount = 0; 
         let comboTimer = 0;
         let comboText = "";
+        let clearedInThisTurn = false; // 현재 턴(주어진 3개 블록 소진) 동안 라인을 제거했는지 여부
 
         const colors = { 0: '#1f2937', 1: '#3b82f6', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899' };
         const rainbowColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
@@ -472,7 +473,8 @@ with tab4:
             let linesCleared = fullRows.length + fullCols.length;
             
             if (linesCleared > 0) {
-                // 콤보 증가 및 콤보 점수 계산
+                // 라인을 제거했으므로 이번 턴에 성공했음을 마킹!
+                clearedInThisTurn = true; 
                 comboCount++;
                 let comboBonus = (comboCount - 1) * 30; // 2콤보부터 30점씩 추가 부여
                 
@@ -488,7 +490,6 @@ with tab4:
                     score += 300; perfectClearTimer = 80; createRainbowExplosion();
                     scoreUI.innerHTML = `점수: ${score} 🌈 완벽해!`;
                 } else if (comboCount > 1) {
-                    // 화면에 콤보 띄우기 세팅
                     comboTimer = 70;
                     comboText = `${comboCount} COMBO! (+${comboBonus}점)`;
                     scoreUI.innerHTML = `점수: ${score} 🔥 ${comboCount}콤보!`;
@@ -499,9 +500,11 @@ with tab4:
 
                 if (score > bestScore) { bestScore = score; localStorage.setItem('blockBlastBest', bestScore); bestUI.innerHTML = `🏆 최고기록: ${bestScore}`; }
             } else {
-                // 부순 라인이 없으면 콤보 초기화
-                comboCount = 0; 
-                scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
+                // 부수지 못했더라도 아직 턴이 끝나지 않았다면 콤보UI를 유지시킵니다.
+                if (comboCount === 0) {
+                    scoreUI.innerHTML = `점수: ${score}`;
+                    scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
+                }
             }
         }
 
@@ -557,7 +560,19 @@ with tab4:
                 if (score > bestScore) { bestScore = score; localStorage.setItem('blockBlastBest', bestScore); bestUI.innerHTML = `🏆 최고기록: ${bestScore}`; }
 
                 checkLines();
-                if(hand.filter(p => p.active).length === 0) { initHand(); }
+                
+                // 🔥 모든 손패(3개)를 소진하여 턴이 끝났을 때 콤보 유지 여부 판단
+                if(hand.filter(p => p.active).length === 0) { 
+                    if (!clearedInThisTurn) {
+                        // 이번 턴 내내 한 번도 라인을 못 지웠다면 콤보 초기화
+                        comboCount = 0;
+                        scoreUI.innerHTML = `점수: ${score}`;
+                        scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
+                    }
+                    clearedInThisTurn = false; // 새 턴 시작을 위해 초기화
+                    initHand(); 
+                }
+                
                 checkGameOver();
             } else { dragging.x = originalPos.x; dragging.y = originalPos.y; } dragging = null;
         });
@@ -571,9 +586,9 @@ with tab4:
                 ctx.save();
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
                 ctx.font = 'bold 38px "Impact", sans-serif';
-                let floatY = canvas.height/2 - (70 - comboTimer)*1.5; // 위로 서서히 떠오르는 효과
+                let floatY = canvas.height/2 - (70 - comboTimer)*1.5; 
                 ctx.fillStyle = '#f97316'; ctx.shadowColor = '#ea580c'; ctx.shadowBlur = 12;
-                ctx.globalAlpha = comboTimer / 70; // 서서히 투명해짐
+                ctx.globalAlpha = comboTimer / 70; 
                 ctx.fillText(comboText, canvas.width/2, floatY);
                 ctx.restore();
                 comboTimer--;
@@ -602,7 +617,7 @@ with tab4:
 
         resetBtn.addEventListener('click', () => { 
             board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); 
-            score = 0; comboCount = 0; gameOver = false; 
+            score = 0; comboCount = 0; clearedInThisTurn = false; gameOver = false; 
             scoreUI.innerHTML = "점수: 0"; 
             scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
             initHand(); 
@@ -611,4 +626,4 @@ with tab4:
     </script>
     """
     components.html(block_js, height=690)
-    st.caption("💡 **[블록 블라스트 플레이 룰]** 블록을 빈틈없이 채워 라인을 제거하세요. **라인을 연속으로 제거하면 콤보(Combo)가 발동하여 점수가 폭발적으로 증가합니다!** 단, 라인을 없애지 못하고 블록만 놓는 턴이 생기면 콤보는 즉시 초기화됩니다.")
+    st.caption("💡 **[블록 블라스트 콤보 룰]** 3개의 블록을 모두 내려놓는 것을 '1턴'으로 간주합니다. 이 턴 안에서 **단 한 번이라도** 라인을 제거했다면 콤보가 유지되며 점수가 기하급수적으로 폭발합니다!")
