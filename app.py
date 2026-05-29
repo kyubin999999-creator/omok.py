@@ -5,10 +5,10 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("오목, 체스, 체커에 이어 중독성 퍼즐 **블록 블라스트(Block Blast)** 탭이 새롭게 추가되었습니다!")
+st.markdown("오목, 체스, 체커에 이어 무지개 퍼펙트 클리어 이펙트와 최고 기록이 저장되는 **블록 블라스트(Block Blast)**까지 탑재되었습니다!")
 
 # --- 4개의 탭 구성 ---
-tab1, tab2, tab3, tab4 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커", "🧱 블록 블라스트"])
+tab1, tab2, tab3, tab4 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커", "🌈 블록 블라스트"])
 
 # ==============================================================================
 # 🗂️ TAB 1: 3D 정식 오목
@@ -87,16 +87,11 @@ with tab2:
     chess_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto 15px auto;">
-            <div id="c-status" style="padding: 10px 15px; background: #f3e8ff; color: #6b21a8; border-radius: 8px; font-weight: bold; font-size: 15px; border: 1px solid #e9d5ff;">
-                ⚪ 백돌(White) 선공 차례입니다
-            </div>
-            <button id="c-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-                🔄 게임 리셋
-            </button>
+            <div id="c-status" style="padding: 10px 15px; background: #f3e8ff; color: #6b21a8; border-radius: 8px; font-weight: bold; font-size: 15px; border: 1px solid #e9d5ff;">⚪ 백돌(White) 선공 차례입니다</div>
+            <button id="c-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 게임 리셋</button>
         </div>
         <canvas id="chessCanvas" width="500" height="500" style="border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); cursor: pointer; background: #000;"></canvas>
     </div>
-
     <script>
         const cCanvas = document.getElementById('chessCanvas'); const cCtx = cCanvas.getContext('2d');
         const cStatus = document.getElementById('c-status'); const cReset = document.getElementById('c-reset');
@@ -236,23 +231,17 @@ with tab3:
     checkers_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto 15px auto;">
-            <div id="ck-status" style="padding: 10px 15px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-weight: bold; font-size: 15px; border: 1px solid #fca5a5;">
-                🔴 레드(Red) 플레이어 차례입니다
-            </div>
-            <button id="ck-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">
-                🔄 게임 리셋
-            </button>
+            <div id="ck-status" style="padding: 10px 15px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-weight: bold; font-size: 15px; border: 1px solid #fca5a5;">🔴 레드(Red) 플레이어 차례입니다</div>
+            <button id="ck-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 게임 리셋</button>
         </div>
         <canvas id="ckCanvas" width="500" height="500" style="border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); cursor: pointer; background: #000;"></canvas>
     </div>
-
     <script>
         const ckCanvas = document.getElementById('ckCanvas'); const ckCtx = ckCanvas.getContext('2d');
         const ckStatus = document.getElementById('ck-status'); const ckReset = document.getElementById('ck-reset');
         const CK_CELL = ckCanvas.width / 8;
         let ckTurn = 'r'; let ckSel = null; let ckWinner = null;
-        let ckShakeTime = 0; let ckParticles = [];
-        let comboMode = false;
+        let ckShakeTime = 0; let ckParticles = []; let comboMode = false;
 
         let ckBoard = Array(8).fill(null).map(() => Array(8).fill(''));
         for(let r=0; r<3; r++) for(let c=0; c<8; c++) if((r+c)%2===1) ckBoard[r][c] = 'b';
@@ -268,33 +257,17 @@ with tab3:
 
         function isValidCkMove(sr, sc, tr, tc, p) {
             if (ckBoard[tr][tc] !== '') return false;
-            let dr = tr - sr; let dc = tc - sc;
-            let isKing = p.length === 2; let baseColor = p[0];
-
-            if (!comboMode && Math.abs(dc) === 1) {
-                if (isKing && Math.abs(dr) === 1) return { jump: false };
-                if (!isKing && dr === (baseColor === 'r' ? -1 : 1)) return { jump: false };
-            }
+            let dr = tr - sr; let dc = tc - sc; let isKing = p.length === 2; let baseColor = p[0];
+            if (!comboMode && Math.abs(dc) === 1) { if (isKing && Math.abs(dr) === 1) return { jump: false }; if (!isKing && dr === (baseColor === 'r' ? -1 : 1)) return { jump: false }; }
             if (Math.abs(dc) === 2) {
-                let validRowJump = false;
-                if (isKing && Math.abs(dr) === 2) validRowJump = true;
-                if (!isKing && dr === (baseColor === 'r' ? -2 : 2)) validRowJump = true;
-
-                if (validRowJump) {
-                    let midR = sr + (dr / 2); let midC = sc + (dc / 2);
-                    let target = ckBoard[midR][midC];
-                    if (target !== '' && target[0] !== baseColor) { return { jump: true, mr: midR, mc: midC }; }
-                }
-            }
-            return false;
+                let validRowJump = false; if (isKing && Math.abs(dr) === 2) validRowJump = true; if (!isKing && dr === (baseColor === 'r' ? -2 : 2)) validRowJump = true;
+                if (validRowJump) { let midR = sr + (dr / 2); let midC = sc + (dc / 2); let target = ckBoard[midR][midC]; if (target !== '' && target[0] !== baseColor) { return { jump: true, mr: midR, mc: midC }; } }
+            } return false;
         }
 
         function hasMoreJumps(r, c, p) {
             let scanTargets = [[2,2], [2,-2], [-2,2], [-2,-2]];
-            for (let [dr, dc] of scanTargets) {
-                let tr = r + dr; let tc = c + dc;
-                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) { if (isValidCkMove(r, c, tr, tc, p)?.jump) return true; }
-            } return false;
+            for (let [dr, dc] of scanTargets) { let tr = r + dr; let tc = c + dc; if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) { if (isValidCkMove(r, c, tr, tc, p)?.jump) return true; } } return false;
         }
 
         function drawCkBoard() {
@@ -306,10 +279,8 @@ with tab3:
                     if (ckSel) {
                         let res = isValidCkMove(ckSel.r, ckSel.c, r, c, ckBoard[ckSel.r][ckSel.c]);
                         if (res) {
-                            if (res.jump) {
-                                ckCtx.fillStyle = 'rgba(239, 68, 68, 0.35)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
-                                ckCtx.strokeStyle = '#ef4444'; ckCtx.lineWidth = 3; ckCtx.strokeRect(x+1.5, y+1.5, CK_CELL-3, CK_CELL-3);
-                            } else { ckCtx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL); }
+                            if (res.jump) { ckCtx.fillStyle = 'rgba(239, 68, 68, 0.35)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL); ckCtx.strokeStyle = '#ef4444'; ckCtx.lineWidth = 3; ckCtx.strokeRect(x+1.5, y+1.5, CK_CELL-3, CK_CELL-3); } 
+                            else { ckCtx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL); }
                         }
                     }
                 }
@@ -324,9 +295,7 @@ with tab3:
                         let x = c * CK_CELL + CK_CELL / 2; let y = r * CK_CELL + CK_CELL / 2; ckCtx.save();
                         if (p[0] !== ckTurn && !ckWinner) { ckCtx.globalAlpha = 0.35; } else { ckCtx.globalAlpha = 1.0; }
                         ckCtx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ckCtx.shadowBlur = 6; ckCtx.shadowOffsetX = 2; ckCtx.shadowOffsetY = 4;
-                        ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.38, 0, Math.PI * 2);
-                        ckCtx.fillStyle = p[0] === 'r' ? '#ef4444' : '#1e293b'; ckCtx.fill();
-                        ckCtx.strokeStyle = '#fff'; ckCtx.lineWidth = 2; ckCtx.stroke();
+                        ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.38, 0, Math.PI * 2); ckCtx.fillStyle = p[0] === 'r' ? '#ef4444' : '#1e293b'; ckCtx.fill(); ckCtx.strokeStyle = '#fff'; ckCtx.lineWidth = 2; ckCtx.stroke();
                         if (p.length === 2) { ckCtx.font = '16px serif'; ckCtx.fillStyle = '#ffd700'; ckCtx.textAlign = 'center'; ckCtx.textBaseline = 'middle'; ckCtx.fillText('👑', x, y); } 
                         else { ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.22, 0, Math.PI * 2); ckCtx.strokeStyle = 'rgba(255,255,255,0.4)'; ckCtx.lineWidth = 1.5; ckCtx.stroke(); }
                         ckCtx.restore();
@@ -356,7 +325,6 @@ with tab3:
 
         ckCanvas.addEventListener('click', function(e) {
             if (ckWinner) return; const rect = ckCanvas.getBoundingClientRect(); const c = Math.floor((e.clientX - rect.left) / CK_CELL); const r = Math.floor((e.clientY - rect.top) / CK_CELL); let p = ckBoard[r][c];
-
             if (ckSel === null) { if (p !== '' && p[0] === ckTurn && !comboMode) { ckSel = {r, c}; } } 
             else {
                 let movingPiece = ckBoard[ckSel.r][ckSel.c]; let res = isValidCkMove(ckSel.r, ckSel.c, r, c, movingPiece);
@@ -365,35 +333,21 @@ with tab3:
                     ckBoard[r][c] = movingPiece; ckBoard[ckSel.r][ckSel.c] = '';
                     if (ckTurn === 'r' && r === 0 && movingPiece === 'r') { ckBoard[r][c] = 'rK'; movingPiece = 'rK'; }
                     if (ckTurn === 'b' && r === 7 && movingPiece === 'b') { ckBoard[r][c] = 'bK'; movingPiece = 'bK'; }
-
-                    if (res.jump && hasMoreJumps(r, c, movingPiece)) {
-                        comboMode = true; ckSel = { r, c };
-                        ckStatus.style.background = '#fef08a'; ckStatus.style.color = '#854d0e'; ckStatus.innerHTML = `🔥 연속 콤보 사냥 찬스! 추가로 적을 격파하세요!`;
-                        return;
-                    }
+                    if (res.jump && hasMoreJumps(r, c, movingPiece)) { comboMode = true; ckSel = { r, c }; ckStatus.style.background = '#fef08a'; ckStatus.style.color = '#854d0e'; ckStatus.innerHTML = `🔥 연속 콤보 사냥 찬스! 추가로 적을 격파하세요!`; return; }
                     comboMode = false; ckSel = null;
 
                     let rCount = 0; let bCount = 0;
                     for(let i=0; i<8; i++) for(let j=0; j<8; j++) { if(ckBoard[i][j][0]==='r') rCount++; if(ckBoard[i][j][0]==='b') bCount++; }
-
-                    if (rCount === 0) { ckWinner = 'b'; }
-                    else if (bCount === 0) { ckWinner = 'r'; }
-                    else {
+                    if (rCount === 0) { ckWinner = 'b'; } else if (bCount === 0) { ckWinner = 'r'; } else {
                         let nextTurn = (ckTurn === 'r' ? 'b' : 'r'); let hasValidMove = false;
                         for(let i=0; i<8; i++) {
                             for(let j=0; j<8; j++) {
                                 if(ckBoard[i][j] !== '' && ckBoard[i][j][0] === nextTurn) {
                                     let testMoves = [[1,1], [1,-1], [-1,1], [-1,-1], [2,2], [2,-2], [-2,2], [-2,-2]];
-                                    for(let [dr, dc] of testMoves) {
-                                        let tr = i + dr; let tc = j + dc;
-                                        if(tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
-                                            if(isValidCkMove(i, j, tr, tc, ckBoard[i][j])) { hasValidMove = true; break; }
-                                        }
-                                    }
+                                    for(let [dr, dc] of testMoves) { let tr = i + dr; let tc = j + dc; if(tr >= 0 && tr < 8 && tc >= 0 && tc < 8) { if(isValidCkMove(i, j, tr, tc, ckBoard[i][j])) { hasValidMove = true; break; } } }
                                 } if(hasValidMove) break;
                             } if(hasValidMove) break;
-                        }
-                        if(!hasValidMove) { ckWinner = ckTurn; }
+                        } if(!hasValidMove) { ckWinner = ckTurn; }
                     }
 
                     if (!ckWinner) {
@@ -401,13 +355,11 @@ with tab3:
                         ckStatus.style.background = ckTurn === 'r' ? '#fee2e2' : '#1e293b'; ckStatus.style.color = ckTurn === 'r' ? '#991b1b' : '#f8fafc';
                         ckStatus.innerHTML = ckTurn === 'r' ? "🔴 레드(Red) 플레이어 차례입니다" : "⚫ 블랙(Black) 플레이어 차례입니다";
                     } else {
-                        ckStatus.style.background = '#dcfce7'; ckStatus.style.color = '#15803d';
-                        ckStatus.innerHTML = `🎉 대국 종료! 기물 전멸 혹은 사방을 완벽히 가둬버린 [${ckWinner==='r'?'레드':'블랙'}]의 짜릿한 승리입니다!`;
+                        ckStatus.style.background = '#dcfce7'; ckStatus.style.color = '#15803d'; ckStatus.innerHTML = `🎉 대국 종료! 기물 전멸 혹은 사방을 완벽히 가둬버린 [${ckWinner==='r'?'레드':'블랙'}]의 짜릿한 승리입니다!`;
                     }
                 } else { if (!comboMode && p !== '' && p[0] === ckTurn) { ckSel = {r, c}; } else if (!comboMode) { ckSel = null; } }
             }
         });
-
         ckReset.addEventListener('click', function() { location.reload(); });
         ckLoop();
     </script>
@@ -415,14 +367,17 @@ with tab3:
     components.html(checkers_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 4: 블록 블라스트 (🧱 드래그 앤 드롭 배치 + 8x8 줄 제거 + 콤보 폭발 이펙트)
+# 🗂️ TAB 4: 블록 블라스트 (🌈 무지개 퍼펙트 클리어 + 🏆 최고 점수 기록 추가)
 # ==============================================================================
 with tab4:
     st.subheader("🧱 무한 중독 타격 퍼즐: 블록 블라스트 마스터")
     block_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 480px; margin: 0 auto 15px auto;">
-            <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #a7f3d0;"> Score: 0</div>
+            <div style="display: flex; gap: 10px;">
+                <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 14px; border: 1px solid #a7f3d0;">점수: 0</div>
+                <div id="b-best" style="padding: 10px 15px; background: #fffbeb; color: #b45309; border-radius: 8px; font-weight: bold; font-size: 14px; border: 1px solid #fde68a;">🏆 최고기록: 0</div>
+            </div>
             <button id="b-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 판 초기화</button>
         </div>
         <canvas id="blockCanvas" width="480" height="640" style="border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); background: #111827; cursor: pointer;"></canvas>
@@ -430,28 +385,27 @@ with tab4:
 
     <script>
         const canvas = document.getElementById('blockCanvas'); const ctx = canvas.getContext('2d');
-        const scoreUI = document.getElementById('b-score'); const resetBtn = document.getElementById('b-reset');
+        const scoreUI = document.getElementById('b-score'); const bestUI = document.getElementById('b-best');
+        const resetBtn = document.getElementById('b-reset');
 
         const GRID_SIZE = 8; const CELL_SIZE = 48; const BOARD_X = 48; const BOARD_Y = 48;
         let board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
-        let score = 0; let gameOver = false; let particles = [];
-
-        // 🎨 생동감 넘치는 네온 블록 컬러 세트
-        const colors = { 0: '#1f2937', 1: '#3b82f6', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899' };
+        let score = 0; 
         
-        // 🧱 원형 블록 블라스트 기하학적 블록 모양 데이터
+        // 브라우저 캐시에 저장된 최고 점수 불러오기
+        let bestScore = localStorage.getItem('blockBlastBest') || 0;
+        bestUI.innerHTML = `🏆 최고기록: ${bestScore}`;
+        
+        let gameOver = false; let particles = [];
+        let perfectClearTimer = 0; // 퍼펙트 텍스트 띄우는 타이머
+
+        const colors = { 0: '#1f2937', 1: '#3b82f6', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899' };
+        const rainbowColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
+        
         const blockShapes = [
-            [[1]], // 1x1
-            [[1,1]], // 가로 2
-            [[1,1,1]], // 가로 3
-            [[1],[1]], // 세로 2
-            [[1,1],[1,1]], // 2x2 네모
-            [[1,1,1],[0,1,0]], // T자
-            [[1,0],[1,0],[1,1]], // L자
-            [[0,1],[0,1],[1,1]]
+            [[1]], [[1,1]], [[1,1,1]], [[1],[1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,0],[1,0],[1,1]], [[0,1],[0,1],[1,1]]
         ];
 
-        // 하단에 배치할 무작위 블록 3개 보관함 정보
         let hand = [ {shape:[], color:1, x:40, y:460, w:0, h:0, active:true}, {shape:[], color:2, x:180, y:460, w:0, h:0, active:true}, {shape:[], color:3, x:320, y:460, w:0, h:0, active:true} ];
         let dragging = null; let dragOffset = {x:0, y:0}; let originalPos = {x:0, y:0};
 
@@ -471,13 +425,25 @@ with tab4:
             }
         }
 
+        // 🌈 대망의 무지개 파티클 폭발 이펙트 함수
+        function createRainbowExplosion() {
+            for(let i=0; i<150; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 10 + 3;
+                let randomColor = rainbowColors[Math.floor(Math.random() * rainbowColors.length)];
+                particles.push({ 
+                    x: canvas.width/2, y: canvas.height/2, 
+                    vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, 
+                    r: Math.random()*6+3, alpha: 1, color: randomColor 
+                });
+            }
+        }
+
         function drawGrid() {
             for(let r=0; r<GRID_SIZE; r++) {
                 for(let c=0; c<GRID_SIZE; c++) {
-                    let val = board[r][c];
-                    let x = BOARD_X + c * CELL_SIZE; let y = BOARD_Y + r * CELL_SIZE;
-                    ctx.fillStyle = colors[val];
-                    ctx.fillRect(x, y, CELL_SIZE - 2, CELL_SIZE - 2);
+                    let val = board[r][c]; let x = BOARD_X + c * CELL_SIZE; let y = BOARD_Y + r * CELL_SIZE;
+                    ctx.fillStyle = colors[val]; ctx.fillRect(x, y, CELL_SIZE - 2, CELL_SIZE - 2);
                     if(val === 0) { ctx.strokeStyle = '#374151'; ctx.lineWidth = 1; ctx.strokeRect(x, y, CELL_SIZE-2, CELL_SIZE-2); } 
                     else { ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x+2, y+2, CELL_SIZE-6, CELL_SIZE/3); }
                 }
@@ -486,15 +452,13 @@ with tab4:
 
         function drawHand() {
             hand.forEach((p) => {
-                if(!p.active) return;
-                ctx.save();
-                let scale = (dragging === p) ? 1.0 : 0.75; // 드래그 중일 때 원래 크기, 대기 중일 땐 앙증맞게 축소
+                if(!p.active) return; ctx.save();
+                let scale = (dragging === p) ? 1.0 : 0.75;
                 ctx.translate(p.x, p.y); ctx.scale(scale, scale);
                 for(let r=0; r<p.shape.length; r++) {
                     for(let c=0; c<p.shape[r].length; c++) {
                         if(p.shape[r][c]) {
-                            ctx.fillStyle = colors[p.color];
-                            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
+                            ctx.fillStyle = colors[p.color]; ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
                             ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(c*CELL_SIZE+2, r*CELL_SIZE+2, CELL_SIZE-6, 12);
                         }
                     }
@@ -509,7 +473,28 @@ with tab4:
 
             fullRows.forEach(r => { for(let c=0; c<GRID_SIZE; c++) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } score += 10; });
             fullCols.forEach(c => { for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]!==0) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } } score += 10; });
-            if(fullRows.length > 0 || fullCols.length > 0) { scoreUI.innerHTML = `得分 Score: ${score} 🔥 Combo!`; }
+            
+            if(fullRows.length > 0 || fullCols.length > 0) {
+                // 블록을 깼을 때 보드가 싹 다 비워졌는지 확인 (Perfect Clear 감지)
+                let isEmpty = true;
+                for(let r=0; r<GRID_SIZE; r++) { for(let c=0; c<GRID_SIZE; c++) { if(board[r][c] !== 0) isEmpty = false; } }
+
+                if (isEmpty) {
+                    score += 300; // 퍼펙트 보너스 무려 300점!
+                    perfectClearTimer = 80; // 화면에 이펙트 띄우기
+                    createRainbowExplosion();
+                    scoreUI.innerHTML = `점수: ${score} 🌈 완벽해!`;
+                } else {
+                    scoreUI.innerHTML = `점수: ${score} 🔥 Combo!`;
+                }
+
+                // 매번 부술 때마다 점수 체크 후 최고기록 갱신
+                if (score > bestScore) {
+                    bestScore = score;
+                    localStorage.setItem('blockBlastBest', bestScore);
+                    bestUI.innerHTML = `🏆 최고기록: ${bestScore}`;
+                }
+            }
         }
 
         function canPlace(shape, startR, startC) {
@@ -525,15 +510,9 @@ with tab4:
         }
 
         function checkGameOver() {
-            let activePieces = hand.filter(p => p.active);
-            if(activePieces.length === 0) return; // 다음 턴에 채워질 것이므로 세이프
-            for(let p of activePieces) {
-                for(let r=0; r<GRID_SIZE; r++) {
-                    for(let c=0; c<GRID_SIZE; c++) {
-                        if(canPlace(p.shape, r, c)) return; // 하나라도 둘 수 있는 자리가 있으면 게임 진행
-                    }
-                }
-            } gameOver = true; // 그 어떤 핸드 기물도 배치할 공간이 없으면 사망
+            let activePieces = hand.filter(p => p.active); if(activePieces.length === 0) return;
+            for(let p of activePieces) { for(let r=0; r<GRID_SIZE; r++) { for(let c=0; c<GRID_SIZE; c++) { if(canPlace(p.shape, r, c)) return; } } }
+            gameOver = true;
         }
 
         function updateParticles() {
@@ -544,65 +523,69 @@ with tab4:
             }
         }
 
-        // --- 🖐️ 마우스 및 터치 모바일 호환 물리 드래그 시스템 ---
         function getMousePos(e) { const rect = canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
 
         canvas.addEventListener('mousedown', (e) => {
             if(gameOver) return; const pos = getMousePos(e);
             for(let p of hand) {
                 if(!p.active) continue;
-                // 미니 크기 감안한 히트박스 판정
                 let w = p.shape[0].length * CELL_SIZE * 0.8; let h = p.shape.length * CELL_SIZE * 0.8;
                 if(pos.x >= p.x && pos.x <= p.x + w && pos.y >= p.y && pos.y <= p.y + h) {
-                    dragging = p; dragOffset.x = pos.x - p.x; dragOffset.y = pos.y - p.y; originalPos.x = p.ox; originalPos.y = p.oy;
-                    break;
+                    dragging = p; dragOffset.x = pos.x - p.x; dragOffset.y = pos.y - p.y; originalPos.x = p.ox; originalPos.y = p.oy; break;
                 }
             }
         });
 
-        canvas.addEventListener('mousemove', (e) => {
-            if(!dragging) return; const pos = getMousePos(e);
-            dragging.x = pos.x - dragOffset.x; dragging.y = pos.y - dragOffset.y;
-        });
+        canvas.addEventListener('mousemove', (e) => { if(!dragging) return; const pos = getMousePos(e); dragging.x = pos.x - dragOffset.x; dragging.y = pos.y - dragOffset.y; });
 
         canvas.addEventListener('mouseup', (e) => {
             if(!dragging) return;
-            // 보드 그리드상의 어디에 드롭되었는지 역연산
-            let gridC = Math.round((dragging.x - BOARD_X) / CELL_SIZE);
-            let gridR = Math.round((dragging.y - BOARD_Y) / CELL_SIZE);
+            let gridC = Math.round((dragging.x - BOARD_X) / CELL_SIZE); let gridR = Math.round((dragging.y - BOARD_Y) / CELL_SIZE);
 
             if(canPlace(dragging.shape, gridR, gridC)) {
-                for(let r=0; r<dragging.shape.length; r++) {
-                    for(let c=0; c<dragging.shape[r].length; c++) {
-                        if(dragging.shape[r][c]) board[gridR + r][gridC + c] = dragging.color;
-                    }
-                }
+                for(let r=0; r<dragging.shape.length; r++) { for(let c=0; c<dragging.shape[r].length; c++) { if(dragging.shape[r][c]) board[gridR + r][gridC + c] = dragging.color; } }
                 dragging.active = false; score += dragging.shape.flat().filter(Boolean).length;
-                scoreUI.innerHTML = `得分 Score: ${score}`;
-                checkLines();
+                scoreUI.innerHTML = `점수: ${score}`;
+                
+                // 블록을 내려놨을 때 최고 점수를 넘겼다면 즉시 갱신
+                if (score > bestScore) { bestScore = score; localStorage.setItem('blockBlastBest', bestScore); bestUI.innerHTML = `🏆 최고기록: ${bestScore}`; }
 
-                // 3개 블록 다 쓰면 새 리스트 핸드 스폰
+                checkLines();
                 if(hand.filter(p => p.active).length === 0) { initHand(); }
                 checkGameOver();
-            } else {
-                // 배치 실패 시 원래 자리로 스냅백 돌아가기
-                dragging.x = originalPos.x; dragging.y = originalPos.y;
-            } dragging = null;
+            } else { dragging.x = originalPos.x; dragging.y = originalPos.y; } dragging = null;
         });
 
         function loop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawGrid(); drawHand(); updateParticles();
+            
+            // 🌈 퍼펙트 클리어 이펙트 글씨 렌더링
+            if(perfectClearTimer > 0) {
+                ctx.save();
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 46px "Impact", sans-serif';
+                let hue = (Date.now() / 3) % 360; // 시간이 지남에 따라 색상이 무지개빛으로 회전
+                ctx.fillStyle = `hsl(${hue}, 100%, 55%)`;
+                ctx.shadowColor = `hsl(${hue}, 100%, 60%)`; ctx.shadowBlur = 20;
+                ctx.fillText('🌈 PERFECT CLEAR!', canvas.width/2, canvas.height/2);
+                ctx.restore();
+                perfectClearTimer--;
+            }
+
             if(gameOver) {
                 ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0,0,canvas.width,canvas.height);
-                ctx.fillStyle = '#ef4444'; ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2);
-                ctx.fillStyle = '#fff'; ctx.font = '18px sans-serif'; ctx.fillText(`최종 스코어: ${score}점`, canvas.width/2, canvas.height/2 + 40);
+                ctx.fillStyle = '#ef4444'; ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 20);
+                ctx.fillStyle = '#fff'; ctx.font = '22px "Malgun Gothic", sans-serif'; ctx.fillText(`최종 스코어: ${score}점`, canvas.width/2, canvas.height/2 + 30);
+                if (score >= bestScore && score > 0) {
+                    ctx.fillStyle = '#fde047'; ctx.font = 'bold 18px "Malgun Gothic", sans-serif'; ctx.fillText('🎉 최고 기록 달성! 🎉', canvas.width/2, canvas.height/2 + 70);
+                }
             } requestAnimationFrame(loop);
         }
 
-        resetBtn.addEventListener('click', () => { board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); score = 0; gameOver = false; scoreUI.innerHTML = "得分 Score: 0"; initHand(); });
+        resetBtn.addEventListener('click', () => { board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); score = 0; gameOver = false; scoreUI.innerHTML = "점수: 0"; initHand(); });
         initHand(); loop();
     </script>
     """
     components.html(block_js, height=690)
-    st.caption("💡 **[블록 블라스트 플레이 룰]** 아래 나타나는 미니 네온 블록 묶음을 마우스로 누른 채 **드래그하여 상단 8x8 보드판 원하는 칸 위에 놓으세요.** 테트리스처럼 가로줄이나 세로줄이 빈틈없이 완성되면 라인이 터지면서 높은 보너스 콤보 점수를 획득합니다. 만약 아래 있는 블록을 보드판 그 어느 곳에도 더 이상 배치할 수 없게 되면 게임오버됩니다.")
+    st.caption("💡 **[블록 블라스트 플레이 룰]** 아래 나타나는 미니 블록을 보드판에 빈틈없이 올려 라인을 제거하세요. **화면을 완전히 싹 비워버리면 엄청난 점수와 함께 무지개 파티클 폭발 효과(Perfect Clear)가 터집니다!** 최고 점수는 게임을 종료해도 브라우저에 안전하게 저장됩니다.")
+    
