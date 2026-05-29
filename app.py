@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("오목, 체스, 체커에 이어 무지개 퍼펙트 클리어 이펙트와 최고 기록이 저장되는 **블록 블라스트(Block Blast)**까지 탑재되었습니다!")
+st.markdown("오목, 체스, 체커에 이어 무지개 퍼펙트 클리어 이펙트와 **연속 콤보 시스템**이 추가된 **블록 블라스트(Block Blast)**까지 탑재되었습니다!")
 
 # --- 4개의 탭 구성 ---
 tab1, tab2, tab3, tab4 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커", "🌈 블록 블라스트"])
@@ -367,7 +367,7 @@ with tab3:
     components.html(checkers_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 4: 블록 블라스트 (🌈 무지개 퍼펙트 클리어 + 🏆 최고 점수 기록 추가)
+# 🗂️ TAB 4: 블록 블라스트 (🌈 무지개 폭발 + 🏆 최고 점수 + 🔥 콤보 시스템 추가)
 # ==============================================================================
 with tab4:
     st.subheader("🧱 무한 중독 타격 퍼즐: 블록 블라스트 마스터")
@@ -375,7 +375,7 @@ with tab4:
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 480px; margin: 0 auto 15px auto;">
             <div style="display: flex; gap: 10px;">
-                <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 14px; border: 1px solid #a7f3d0;">점수: 0</div>
+                <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 14px; border: 1px solid #a7f3d0; transition: all 0.3s;">점수: 0</div>
                 <div id="b-best" style="padding: 10px 15px; background: #fffbeb; color: #b45309; border-radius: 8px; font-weight: bold; font-size: 14px; border: 1px solid #fde68a;">🏆 최고기록: 0</div>
             </div>
             <button id="b-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 판 초기화</button>
@@ -392,12 +392,16 @@ with tab4:
         let board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
         let score = 0; 
         
-        // 브라우저 캐시에 저장된 최고 점수 불러오기
         let bestScore = localStorage.getItem('blockBlastBest') || 0;
         bestUI.innerHTML = `🏆 최고기록: ${bestScore}`;
         
         let gameOver = false; let particles = [];
-        let perfectClearTimer = 0; // 퍼펙트 텍스트 띄우는 타이머
+        let perfectClearTimer = 0; 
+        
+        // --- 콤보 시스템 변수 ---
+        let comboCount = 0; 
+        let comboTimer = 0;
+        let comboText = "";
 
         const colors = { 0: '#1f2937', 1: '#3b82f6', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899' };
         const rainbowColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
@@ -425,17 +429,11 @@ with tab4:
             }
         }
 
-        // 🌈 대망의 무지개 파티클 폭발 이펙트 함수
         function createRainbowExplosion() {
             for(let i=0; i<150; i++) {
-                let angle = Math.random() * Math.PI * 2;
-                let speed = Math.random() * 10 + 3;
+                let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 10 + 3;
                 let randomColor = rainbowColors[Math.floor(Math.random() * rainbowColors.length)];
-                particles.push({ 
-                    x: canvas.width/2, y: canvas.height/2, 
-                    vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, 
-                    r: Math.random()*6+3, alpha: 1, color: randomColor 
-                });
+                particles.push({ x: canvas.width/2, y: canvas.height/2, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, r: Math.random()*6+3, alpha: 1, color: randomColor });
             }
         }
 
@@ -471,29 +469,39 @@ with tab4:
             for(let r=0; r<GRID_SIZE; r++) { let full = true; for(let c=0; c<GRID_SIZE; c++) { if(board[r][c]===0) full = false; } if(full) fullRows.push(r); }
             for(let c=0; c<GRID_SIZE; c++) { let full = true; for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]===0) full = false; } if(full) fullCols.push(c); }
 
-            fullRows.forEach(r => { for(let c=0; c<GRID_SIZE; c++) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } score += 10; });
-            fullCols.forEach(c => { for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]!==0) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } } score += 10; });
+            let linesCleared = fullRows.length + fullCols.length;
             
-            if(fullRows.length > 0 || fullCols.length > 0) {
-                // 블록을 깼을 때 보드가 싹 다 비워졌는지 확인 (Perfect Clear 감지)
+            if (linesCleared > 0) {
+                // 콤보 증가 및 콤보 점수 계산
+                comboCount++;
+                let comboBonus = (comboCount - 1) * 30; // 2콤보부터 30점씩 추가 부여
+                
+                fullRows.forEach(r => { for(let c=0; c<GRID_SIZE; c++) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } });
+                fullCols.forEach(c => { for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]!==0) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } } });
+                
+                score += (linesCleared * 10) + comboBonus;
+
                 let isEmpty = true;
                 for(let r=0; r<GRID_SIZE; r++) { for(let c=0; c<GRID_SIZE; c++) { if(board[r][c] !== 0) isEmpty = false; } }
 
                 if (isEmpty) {
-                    score += 300; // 퍼펙트 보너스 무려 300점!
-                    perfectClearTimer = 80; // 화면에 이펙트 띄우기
-                    createRainbowExplosion();
+                    score += 300; perfectClearTimer = 80; createRainbowExplosion();
                     scoreUI.innerHTML = `점수: ${score} 🌈 완벽해!`;
+                } else if (comboCount > 1) {
+                    // 화면에 콤보 띄우기 세팅
+                    comboTimer = 70;
+                    comboText = `${comboCount} COMBO! (+${comboBonus}점)`;
+                    scoreUI.innerHTML = `점수: ${score} 🔥 ${comboCount}콤보!`;
+                    scoreUI.style.background = '#fef08a'; scoreUI.style.color = '#b45309'; scoreUI.style.borderColor = '#fde047';
                 } else {
-                    scoreUI.innerHTML = `점수: ${score} 🔥 Combo!`;
+                    scoreUI.innerHTML = `점수: ${score}`;
                 }
 
-                // 매번 부술 때마다 점수 체크 후 최고기록 갱신
-                if (score > bestScore) {
-                    bestScore = score;
-                    localStorage.setItem('blockBlastBest', bestScore);
-                    bestUI.innerHTML = `🏆 최고기록: ${bestScore}`;
-                }
+                if (score > bestScore) { bestScore = score; localStorage.setItem('blockBlastBest', bestScore); bestUI.innerHTML = `🏆 최고기록: ${bestScore}`; }
+            } else {
+                // 부순 라인이 없으면 콤보 초기화
+                comboCount = 0; 
+                scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
             }
         }
 
@@ -546,8 +554,6 @@ with tab4:
                 for(let r=0; r<dragging.shape.length; r++) { for(let c=0; c<dragging.shape[r].length; c++) { if(dragging.shape[r][c]) board[gridR + r][gridC + c] = dragging.color; } }
                 dragging.active = false; score += dragging.shape.flat().filter(Boolean).length;
                 scoreUI.innerHTML = `점수: ${score}`;
-                
-                // 블록을 내려놨을 때 최고 점수를 넘겼다면 즉시 갱신
                 if (score > bestScore) { bestScore = score; localStorage.setItem('blockBlastBest', bestScore); bestUI.innerHTML = `🏆 최고기록: ${bestScore}`; }
 
                 checkLines();
@@ -560,13 +566,25 @@ with tab4:
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawGrid(); drawHand(); updateParticles();
             
-            // 🌈 퍼펙트 클리어 이펙트 글씨 렌더링
+            // 🔥 연속 콤보 텍스트 애니메이션
+            if(comboTimer > 0) {
+                ctx.save();
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
+                ctx.font = 'bold 38px "Impact", sans-serif';
+                let floatY = canvas.height/2 - (70 - comboTimer)*1.5; // 위로 서서히 떠오르는 효과
+                ctx.fillStyle = '#f97316'; ctx.shadowColor = '#ea580c'; ctx.shadowBlur = 12;
+                ctx.globalAlpha = comboTimer / 70; // 서서히 투명해짐
+                ctx.fillText(comboText, canvas.width/2, floatY);
+                ctx.restore();
+                comboTimer--;
+            }
+
+            // 🌈 퍼펙트 클리어 이펙트
             if(perfectClearTimer > 0) {
                 ctx.save();
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 46px "Impact", sans-serif';
-                let hue = (Date.now() / 3) % 360; // 시간이 지남에 따라 색상이 무지개빛으로 회전
-                ctx.fillStyle = `hsl(${hue}, 100%, 55%)`;
-                ctx.shadowColor = `hsl(${hue}, 100%, 60%)`; ctx.shadowBlur = 20;
+                let hue = (Date.now() / 3) % 360; 
+                ctx.fillStyle = `hsl(${hue}, 100%, 55%)`; ctx.shadowColor = `hsl(${hue}, 100%, 60%)`; ctx.shadowBlur = 20;
                 ctx.fillText('🌈 PERFECT CLEAR!', canvas.width/2, canvas.height/2);
                 ctx.restore();
                 perfectClearTimer--;
@@ -582,10 +600,15 @@ with tab4:
             } requestAnimationFrame(loop);
         }
 
-        resetBtn.addEventListener('click', () => { board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); score = 0; gameOver = false; scoreUI.innerHTML = "점수: 0"; initHand(); });
+        resetBtn.addEventListener('click', () => { 
+            board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); 
+            score = 0; comboCount = 0; gameOver = false; 
+            scoreUI.innerHTML = "점수: 0"; 
+            scoreUI.style.background = '#ecfdf5'; scoreUI.style.color = '#065f46'; scoreUI.style.borderColor = '#a7f3d0';
+            initHand(); 
+        });
         initHand(); loop();
     </script>
     """
     components.html(block_js, height=690)
-    st.caption("💡 **[블록 블라스트 플레이 룰]** 아래 나타나는 미니 블록을 보드판에 빈틈없이 올려 라인을 제거하세요. **화면을 완전히 싹 비워버리면 엄청난 점수와 함께 무지개 파티클 폭발 효과(Perfect Clear)가 터집니다!** 최고 점수는 게임을 종료해도 브라우저에 안전하게 저장됩니다.")
-    
+    st.caption("💡 **[블록 블라스트 플레이 룰]** 블록을 빈틈없이 채워 라인을 제거하세요. **라인을 연속으로 제거하면 콤보(Combo)가 발동하여 점수가 폭발적으로 증가합니다!** 단, 라인을 없애지 못하고 블록만 놓는 턴이 생기면 콤보는 즉시 초기화됩니다.")
