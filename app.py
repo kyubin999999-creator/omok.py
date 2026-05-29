@@ -422,7 +422,7 @@ with tab4:
     block_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 480px; margin: 0 auto 15px auto;">
-            <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #a7f3d0;">得分 Score: 0</div>
+            <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #a7f3d0;"> Score: 0</div>
             <button id="b-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 판 초기화</button>
         </div>
         <canvas id="blockCanvas" width="480" height="640" style="border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); background: #111827; cursor: pointer;"></canvas>
