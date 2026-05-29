@@ -5,13 +5,13 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("기존 오목과 체스의 핵심 기능(타격 가이드 포함)을 그대로 유지하고, 새로운 게임으로 **체커**를 추가했습니다.")
+st.markdown("체스의 **폰 변신**, 체커의 **연속 콤보 사냥**, **킹 진화** 및 **가두기 패배 규칙**까지 완벽하게 적용된 최종 버전입니다.")
 
-# --- 3개의 탭으로 확장 ---
+# --- 3개의 탭 구성 ---
 tab1, tab2, tab3 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커"])
 
 # ==============================================================================
-# 🗂️ TAB 1: 3D 정식 오목 (원래 코드 100% 동일)
+# 🗂️ TAB 1: 3D 정식 오목 (렌주룰 33/44 금수 완벽 적용)
 # ==============================================================================
 with tab1:
     st.subheader("🥋 프로 규격 15x15 오목 (렌주룰 적용)")
@@ -80,10 +80,10 @@ with tab1:
     components.html(omok_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 2: 3D 타격감 체스 (원래 코드 100% 동일 - 빨간색 포착 가이드 포함)
+# 🗂️ TAB 2: 3D 타격감 체스 (이동/사냥 가이드 가시성 유지 + 폰 퀸 자동 승격)
 # ==============================================================================
 with tab2:
-    st.subheader("👑 이동과 '적 기물 사냥' 시각 가이드가 포함된 3D 체스")
+    st.subheader("👑 이동/사냥 시각 가이드 및 폰 퀸 변신(Promotion)이 도입된 3D 체스")
     chess_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto 15px auto;">
@@ -210,12 +210,14 @@ with tab2:
                     let pColor = srcPiece[0]; let targetPiece = cBoard[r][c];
                     if (moveType === 'castling_right') { cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = ''; cBoard[r][5] = pColor + 'R'; cBoard[r][7] = ''; } 
                     else if (moveType === 'castling_left') { cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = ''; cBoard[r][3] = pColor + 'R'; cBoard[r][0] = ''; } 
-                    else { if (targetPiece !== '') { createExplosion(c*C_CELL+C_CELL/2, r*C_CELL+C_CELL/2, targetPiece[1]); if (targetPiece[1] === 'K') cWinner = cTurn; } cBoard[r][c] = srcPiece; cBoard[selectedPiece.r][selectedPiece.c] = ''; }
+                    else { 
+                        if (targetPiece !== '') { createExplosion(c*C_CELL+C_CELL/2, r*C_CELL+C_CELL/2, targetPiece[1]); if (targetPiece[1] === 'K') cWinner = cTurn; } 
+                        if (srcPiece[1] === 'P' && (r === 0 || r === 7)) { cBoard[r][c] = pColor + 'Q'; } else { cBoard[r][c] = srcPiece; }
+                        cBoard[selectedPiece.r][selectedPiece.c] = ''; 
+                    }
                     if (srcPiece === 'wK') movedPieces['wK'] = true; if (srcPiece === 'bK') movedPieces['bK'] = true;
-                    if (selectedPiece.r === 7 && selectedPiece.c === 0) movedPieces['wR_left'] = true; if (selectedPiece.r === 7 && selectedPiece.c === 7) movedPieces['wR_right'] = true;
-                    if (selectedPiece.r === 0 && selectedPiece.c === 0) movedPieces['bR_left'] = true; if (selectedPiece.r === 0 && selectedPiece.c === 7) movedPieces['bR_right'] = true;
                     selectedPiece = null;
-                    if (cWinner) { cStatus.style.background = '#dcfce7'; cStatus.style.color = '#15803d'; cStatus.innerHTML = `🎉 대국 종료! ${cWinner === 'w' ? '백돌(White)' : '흑돌(Black)'} 플레이어가 승리했습니다!`; } 
+                    if (cWinner) { cStatus.style.background = '#dcfce7'; cStatus.style.color = '#15803d'; cStatus.innerHTML = `🎉 대국 종료! ${cWinner === 'w' ? '백돌' : '흑돌'} 승리!`; } 
                     else { cTurn = cTurn === 'w' ? 'b' : 'w'; cStatus.style.background = cTurn === 'w' ? '#f3e8ff' : '#1e293b'; cTurn === 'w' ? cStatus.style.color = '#6b21a8' : cStatus.style.color = '#f8fafc'; cStatus.innerHTML = cTurn === 'w' ? "⚪ 백돌(White) 차례입니다" : "⚫ 흑돌(Black) 차례입니다"; }
                 } else { if (clickedPiece !== '' && clickedPiece[0] === cTurn) { selectedPiece = {r, c}; } else { selectedPiece = null; } }
             }
@@ -227,10 +229,10 @@ with tab2:
     components.html(chess_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 3: 3D 타격감 체커 (새롭게 추가된 독립 게임)
+# 🗂️ TAB 3: 3D 타격감 체커 (🔥 연속 콤보 사냥 + 킹 진화 + 가두기Blocked 판정 탑재)
 # ==============================================================================
 with tab3:
-    st.subheader("🏁 대각선 점프와 강렬한 타격감을 갖춘 3D 체커")
+    st.subheader("🏁 콤보 연타 사냥, 킹(👑) 진화 및 가두기 차단 규칙이 반영된 3D 체커")
     checkers_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto 15px auto;">
@@ -250,62 +252,64 @@ with tab3:
         const CK_CELL = ckCanvas.width / 8;
         let ckTurn = 'r'; let ckSel = null; let ckWinner = null;
         let ckShakeTime = 0; let ckParticles = [];
+        let comboMode = false;
 
-        // 8x8 체커보드 초기 배치 (어두운 칸에만 배치)
         let ckBoard = Array(8).fill(null).map(() => Array(8).fill(''));
-        for(let r=0; r<3; r++) for(let c=0; c<8; c++) if((r+c)%2===1) ckBoard[r][c] = 'b'; // 블랙 팀
-        for(let r=5; r<8; r++) for(let c=0; c<8; c++) if((r+c)%2===1) ckBoard[r][c] = 'r'; // 레드 팀
+        for(let r=0; r<3; r++) for(let c=0; c<8; c++) if((r+c)%2===1) ckBoard[r][c] = 'b';
+        for(let r=5; r<8; r++) for(let c=0; c<8; c++) if((r+c)%2===1) ckBoard[r][c] = 'r';
 
         function createCkExplosion(x, y) {
             ckShakeTime = 15;
             for (let i = 0; i < 35; i++) {
                 let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 5 + 2;
-                ckParticles.push({
-                    x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, radius: Math.random()*4+2, alpha: 1,
-                    decay: Math.random()*0.02+0.015, color: ['#ff3b30','#ff9500','#ffcc00'][Math.floor(Math.random()*3)]
-                });
+                ckParticles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, radius: Math.random()*4+2, alpha: 1, decay: Math.random()*0.02+0.015, color: ['#ff3b30','#ff9500','#ffcc00'][Math.floor(Math.random()*3)] });
             }
         }
 
         function isValidCkMove(sr, sc, tr, tc, p) {
             if (ckBoard[tr][tc] !== '') return false;
             let dr = tr - sr; let dc = tc - sc;
-            let dir = p === 'r' ? -1 : 1; // 레드는 위로(-1), 블랙은 아래로(+1)
+            let isKing = p.length === 2; let baseColor = p[0];
 
-            // 일반 1칸 이동
-            if (Math.abs(dc) === 1 && dr === dir) return { jump: false };
-            
-            // 2칸 적 뛰어넘기 (사냥)
-            if (Math.abs(dc) === 2 && dr === dir * 2) {
-                let midR = sr + dir; let midC = sc + (dc / 2);
-                if (ckBoard[midR][midC] !== '' && ckBoard[midR][midC] !== p) {
-                    return { jump: true, mr: midR, mc: midC };
+            if (!comboMode && Math.abs(dc) === 1) {
+                if (isKing && Math.abs(dr) === 1) return { jump: false };
+                if (!isKing && dr === (baseColor === 'r' ? -1 : 1)) return { jump: false };
+            }
+            if (Math.abs(dc) === 2) {
+                let validRowJump = false;
+                if (isKing && Math.abs(dr) === 2) validRowJump = true;
+                if (!isKing && dr === (baseColor === 'r' ? -2 : 2)) validRowJump = true;
+
+                if (validRowJump) {
+                    let midR = sr + (dr / 2); let midC = sc + (dc / 2);
+                    let target = ckBoard[midR][midC];
+                    if (target !== '' && target[0] !== baseColor) { return { jump: true, mr: midR, mc: midC }; }
                 }
             }
             return false;
+        }
+
+        function hasMoreJumps(r, c, p) {
+            let scanTargets = [[2,2], [2,-2], [-2,2], [-2,-2]];
+            for (let [dr, dc] of scanTargets) {
+                let tr = r + dr; let tc = c + dc;
+                if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) { if (isValidCkMove(r, c, tr, tc, p)?.jump) return true; }
+            } return false;
         }
 
         function drawCkBoard() {
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
                     let x = c * CK_CELL; let y = r * CK_CELL;
-                    ckCtx.fillStyle = (r + c) % 2 === 0 ? '#f0d9b5' : '#2b2b2b';
-                    ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
-
-                    if (ckSel && ckSel.r === r && ckSel.c === c) {
-                        ckCtx.fillStyle = 'rgba(255, 235, 59, 0.4)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
-                    }
-
-                    // 선택 가이드라인 연출
+                    ckCtx.fillStyle = (r + c) % 2 === 0 ? '#f0d9b5' : '#2b2b2b'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
+                    if (ckSel && ckSel.r === r && ckSel.c === c) { ckCtx.fillStyle = 'rgba(255, 235, 59, 0.4)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL); }
                     if (ckSel) {
                         let res = isValidCkMove(ckSel.r, ckSel.c, r, c, ckBoard[ckSel.r][ckSel.c]);
                         if (res) {
                             if (res.jump) {
                                 ckCtx.fillStyle = 'rgba(239, 68, 68, 0.35)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
                                 ckCtx.strokeStyle = '#ef4444'; ckCtx.lineWidth = 3; ckCtx.strokeRect(x+1.5, y+1.5, CK_CELL-3, CK_CELL-3);
-                            } else {
-                                ckCtx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL);
-                            }
+                            } else { ckCtx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ckCtx.fillRect(x, y, CK_CELL, CK_CELL); }
                         }
                     }
                 }
@@ -317,23 +321,14 @@ with tab3:
                 for (let c = 0; c < 8; c++) {
                     let p = ckBoard[r][c];
                     if (p !== '') {
-                        let x = c * CK_CELL + CK_CELL / 2; let y = r * CK_CELL + CK_CELL / 2;
-                        ckCtx.save();
-                        
-                        // 상대 턴의 말은 똑같이 흐릿하게(Ghost 효과) 연출
-                        if (p !== ckTurn && !ckWinner) { ckCtx.globalAlpha = 0.35; } 
-                        else { ckCtx.globalAlpha = 1.0; }
-
+                        let x = c * CK_CELL + CK_CELL / 2; let y = r * CK_CELL + CK_CELL / 2; ckCtx.save();
+                        if (p[0] !== ckTurn && !ckWinner) { ckCtx.globalAlpha = 0.35; } else { ckCtx.globalAlpha = 1.0; }
                         ckCtx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ckCtx.shadowBlur = 6; ckCtx.shadowOffsetX = 2; ckCtx.shadowOffsetY = 4;
-                        
                         ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.38, 0, Math.PI * 2);
-                        ckCtx.fillStyle = p === 'r' ? '#ef4444' : '#1e293b'; ckCtx.fill();
+                        ckCtx.fillStyle = p[0] === 'r' ? '#ef4444' : '#1e293b'; ckCtx.fill();
                         ckCtx.strokeStyle = '#fff'; ckCtx.lineWidth = 2; ckCtx.stroke();
-                        
-                        // 기물 내부 입체 서클 링 연출
-                        ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.22, 0, Math.PI * 2);
-                        ckCtx.strokeStyle = 'rgba(255,255,255,0.4)'; ckCtx.lineWidth = 1.5; ckCtx.stroke();
-
+                        if (p.length === 2) { ckCtx.font = '16px serif'; ckCtx.fillStyle = '#ffd700'; ckCtx.textAlign = 'center'; ckCtx.textBaseline = 'middle'; ckCtx.fillText('👑', x, y); } 
+                        else { ckCtx.beginPath(); ckCtx.arc(x, y, CK_CELL * 0.22, 0, Math.PI * 2); ckCtx.strokeStyle = 'rgba(255,255,255,0.4)'; ckCtx.lineWidth = 1.5; ckCtx.stroke(); }
                         ckCtx.restore();
                     }
                 }
@@ -342,72 +337,75 @@ with tab3:
 
         function updateCkParticles() {
             for (let i = ckParticles.length - 1; i >= 0; i--) {
-                let p = ckParticles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
-                if (p.alpha <= 0) { ckParticles.splice(i, 1); continue; }
-                ckCtx.save(); ckCtx.globalAlpha = p.alpha; ckCtx.shadowBlur = 8; ckCtx.shadowColor = p.color;
-                ckCtx.beginPath(); ckCtx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ckCtx.fillStyle = p.color; ckCtx.fill(); ckCtx.restore();
+                let p = ckParticles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay; if (p.alpha <= 0) { ckParticles.splice(i, 1); continue; }
+                ckCtx.save(); ckCtx.globalAlpha = p.alpha; ckCtx.shadowBlur = 8; ckCtx.shadowColor = p.color; ckCtx.beginPath(); ckCtx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ckCtx.fillStyle = p.color; ckCtx.fill(); ckCtx.restore();
             }
         }
 
         function drawCkGameOver() {
             if (!ckWinner) return;
-            let grad = ckCtx.createRadialGradient(ckCanvas.width/2, ckCanvas.height/2, 50, ckCanvas.width/2, ckCanvas.height/2, ckCanvas.width*0.7);
-            grad.addColorStop(0, 'rgba(15, 23, 42, 0.9)'); grad.addColorStop(1, 'rgba(2, 6, 23, 0.98)');
-            ckCtx.fillStyle = grad; ckCtx.fillRect(0, 0, ckCanvas.width, ckCanvas.height);
-
-            ckCtx.textAlign = 'center'; ckCtx.textBaseline = 'middle';
-            ckCtx.save(); ckCtx.shadowColor = '#ef4444'; ckCtx.shadowBlur = 20;
-            ckCtx.font = 'bold 54px "Impact", sans-serif'; ckCtx.fillStyle = '#ef4444';
-            ckCtx.fillText('GAME OVER', ckCanvas.width / 2, ckCanvas.height / 2 - 40); ckCtx.restore();
-
-            ckCtx.font = 'bold 22px "Malgun Gothic", sans-serif'; ckCtx.fillStyle = '#f8fafc';
-            let txt = ckWinner === 'r' ? '👑 RED PLAYER WIN 👑' : '👑 BLACK PLAYER WIN 👑';
-            ckCtx.fillText(txt, ckCanvas.width / 2, ckCanvas.height / 2 + 30);
+            let grad = ckCtx.createRadialGradient(ckCanvas.width/2, ckCanvas.height/2, 50, ckCanvas.width/2, ckCanvas.height/2, ckCanvas.width*0.7); grad.addColorStop(0, 'rgba(15, 23, 42, 0.9)'); grad.addColorStop(1, 'rgba(2, 6, 23, 0.98)'); ckCtx.fillStyle = grad; ckCtx.fillRect(0, 0, ckCanvas.width, ckCanvas.height);
+            ckCtx.textAlign = 'center'; ckCtx.textBaseline = 'middle'; ckCtx.save(); ckCtx.shadowColor = '#ef4444'; ckCtx.shadowBlur = 20; ckCtx.font = 'bold 54px "Impact", sans-serif'; ckCtx.fillStyle = '#ef4444'; ckCtx.fillText('GAME OVER', ckCanvas.width / 2, ckCanvas.height / 2 - 40); ckCtx.restore();
+            ckCtx.font = 'bold 22px "Malgun Gothic", sans-serif'; ckCtx.fillStyle = '#f8fafc'; let txt = ckWinner === 'r' ? '👑 RED PLAYER WIN 👑' : '👑 BLACK PLAYER WIN 👑'; ckCtx.fillText(txt, ckCanvas.width / 2, ckCanvas.height / 2 + 30);
         }
 
         function ckLoop() {
-            ckCtx.clearRect(0, 0, ckCanvas.width, ckCanvas.height); ckCtx.save();
-            if (ckShakeTime > 0) { ckCtx.translate((Math.random()-0.5)*8, (Math.random()-0.5)*8); ckShakeTime--; }
-            drawCkBoard(); drawCkPieces(); ckCtx.restore(); updateCkParticles(); drawCkGameOver();
-            requestAnimationFrame(ckLoop);
+            ckCtx.clearRect(0, 0, ckCanvas.width, ckCanvas.height); ckCtx.save(); if (ckShakeTime > 0) { ckCtx.translate((Math.random()-0.5)*8, (Math.random()-0.5)*8); ckShakeTime--; }
+            drawCkBoard(); drawCkPieces(); ckCtx.restore(); updateCkParticles(); drawCkGameOver(); requestAnimationFrame(ckLoop);
         }
 
         ckCanvas.addEventListener('click', function(e) {
-            if (ckWinner) return;
-            const rect = ckCanvas.getBoundingClientRect();
-            const c = Math.floor((e.clientX - rect.left) / CK_CELL);
-            const r = Math.floor((e.clientY - rect.top) / CK_CELL);
-            let p = ckBoard[r][c];
+            if (ckWinner) return; const rect = ckCanvas.getBoundingClientRect(); const c = Math.floor((e.clientX - rect.left) / CK_CELL); const r = Math.floor((e.clientY - rect.top) / CK_CELL); let p = ckBoard[r][c];
 
-            if (ckSel === null) {
-                if (p !== '' && p === ckTurn) { ckSel = {r, c}; }
-            } else {
-                let res = isValidCkMove(ckSel.r, ckSel.c, r, c, ckBoard[ckSel.r][ckSel.c]);
+            if (ckSel === null) { if (p !== '' && p[0] === ckTurn && !comboMode) { ckSel = {r, c}; } } 
+            else {
+                let movingPiece = ckBoard[ckSel.r][ckSel.c]; let res = isValidCkMove(ckSel.r, ckSel.c, r, c, movingPiece);
                 if (res) {
-                    if (res.jump) {
-                        ckBoard[res.mr][res.mc] = '';
-                        createCkExplosion(res.mc*CK_CELL+CK_CELL/2, res.mr*CK_CELL+CK_CELL/2);
-                    }
-                    ckBoard[r][c] = ckTurn; ckBoard[ckSel.r][ckSel.c] = '';
-                    ckSel = null;
+                    if (res.jump) { ckBoard[res.mr][res.mc] = ''; createCkExplosion(res.mc*CK_CELL+CK_CELL/2, res.mr*CK_CELL+CK_CELL/2); }
+                    ckBoard[r][c] = movingPiece; ckBoard[ckSel.r][ckSel.c] = '';
+                    if (ckTurn === 'r' && r === 0 && movingPiece === 'r') { ckBoard[r][c] = 'rK'; movingPiece = 'rK'; }
+                    if (ckTurn === 'b' && r === 7 && movingPiece === 'b') { ckBoard[r][c] = 'bK'; movingPiece = 'bK'; }
 
-                    // 승리 팀 체크 (상대편 기물이 다 떨어지면 승리)
+                    if (res.jump && hasMoreJumps(r, c, movingPiece)) {
+                        comboMode = true; ckSel = { r, c };
+                        ckStatus.style.background = '#fef08a'; ckStatus.style.color = '#854d0e'; ckStatus.innerHTML = `🔥 연속 콤보 사냥 찬스! 추가로 적을 격파하세요!`;
+                        return;
+                    }
+                    comboMode = false; ckSel = null;
+
+                    // --- ⚙️ 정밀 승리 및 블로킹(Blocked) 탐지 엔진 ---
                     let rCount = 0; let bCount = 0;
-                    for(let i=0; i<8; i++) for(let j=0; j<8; j++) { if(ckBoard[i][j]==='r') rCount++; if(ckBoard[i][j]==='b') bCount++; }
-                    if (rCount === 0) ckWinner = 'b'; else if (bCount === 0) ckWinner = 'r';
+                    for(let i=0; i<8; i++) for(let j=0; j<8; j++) { if(ckBoard[i][j][0]==='r') rCount++; if(ckBoard[i][j][0]==='b') bCount++; }
+
+                    if (rCount === 0) { ckWinner = 'b'; }
+                    else if (bCount === 0) { ckWinner = 'r'; }
+                    else {
+                        let nextTurn = (ckTurn === 'r' ? 'b' : 'r'); let hasValidMove = false;
+                        for(let i=0; i<8; i++) {
+                            for(let j=0; j<8; j++) {
+                                if(ckBoard[i][j] !== '' && ckBoard[i][j][0] === nextTurn) {
+                                    let testMoves = [[1,1], [1,-1], [-1,1], [-1,-1], [2,2], [2,-2], [-2,2], [-2,-2]];
+                                    for(let [dr, dc] of testMoves) {
+                                        let tr = i + dr; let tc = j + dc;
+                                        if(tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                                            if(isValidCkMove(i, j, tr, tc, ckBoard[i][j])) { hasValidMove = true; break; }
+                                        }
+                                    }
+                                } if(hasValidMove) break;
+                            } if(hasValidMove) break;
+                        }
+                        if(!hasValidMove) { ckWinner = ckTurn; } // 다음 사람이 이동 불가능하면 현재 플레이어 패승!
+                    }
 
                     if (!ckWinner) {
                         ckTurn = ckTurn === 'r' ? 'b' : 'r';
-                        ckStatus.style.background = ckTurn === 'r' ? '#fee2e2' : '#1e293b';
-                        ckStatus.style.color = ckTurn === 'r' ? '#991b1b' : '#f8fafc';
+                        ckStatus.style.background = ckTurn === 'r' ? '#fee2e2' : '#1e293b'; ckStatus.style.color = ckTurn === 'r' ? '#991b1b' : '#f8fafc';
                         ckStatus.innerHTML = ckTurn === 'r' ? "🔴 레드(Red) 플레이어 차례입니다" : "⚫ 블랙(Black) 플레이어 차례입니다";
                     } else {
                         ckStatus.style.background = '#dcfce7'; ckStatus.style.color = '#15803d';
-                        ckStatus.innerHTML = `🎉 대국 종료! ${ckWinner==='r'?'레드':'블랙'} 플레이어가 승리했습니다!`;
+                        ckStatus.innerHTML = `🎉 대국 종료! 기물 전멸 혹은 사방을 완벽히 가둬버린 [${ckWinner==='r'?'레드':'블랙'}]의 짜릿한 승리입니다!`;
                     }
-                } else {
-                    if (p !== '' && p === ckTurn) { ckSel = {r, c}; } else { ckSel = null; }
-                }
+                } else { if (!comboMode && p !== '' && p[0] === ckTurn) { ckSel = {r, c}; } else if (!comboMode) { ckSel = null; } }
             }
         });
 
@@ -416,4 +414,4 @@ with tab3:
     </script>
     """
     components.html(checkers_js, height=580)
-    st.caption("🏁 [체커 간단 규칙] 대각선 앞으로만 1칸 이동할 수 있으며, 내 대각선 앞에 상대방의 말이 있고 그 뒤가 비어있다면 뛰어넘어 적을 '포획(파괴)'할 수 있습니다.")
+    st.caption("🏆 [체커 완전 규칙 정보] 내 모든 기물이 상대방 돌에 완벽히 가로막혀 더 이상 전진이나 점프를 할 수 없는 '이동 불능(Blocked)' 상태가 되면 정식 체커 규칙에 따라 그 즉시 가둔 사람이 판정승을 거두게 됩니다.")
