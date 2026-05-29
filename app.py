@@ -5,13 +5,13 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="방구석 3D 마스터 대국실", page_icon="🎲", layout="centered")
 
 st.title("🎲 3D 입체 타격감 보드게임 대국실 👑")
-st.markdown("체스의 **폰 변신**, 체커의 **연속 콤보 사냥**, **킹 진화** 및 **가두기 패배 규칙**까지 완벽하게 적용된 최종 버전입니다.")
+st.markdown("오목, 체스, 체커에 이어 중독성 퍼즐 **블록 블라스트(Block Blast)** 탭이 새롭게 추가되었습니다!")
 
-# --- 3개의 탭 구성 ---
-tab1, tab2, tab3 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커"])
+# --- 4개의 탭 구성 ---
+tab1, tab2, tab3, tab4 = st.tabs(["⚫ 3D 정식 오목", "👑 3D 타격감 체스", "🏁 3D 타격감 체커", "🧱 블록 블라스트"])
 
 # ==============================================================================
-# 🗂️ TAB 1: 3D 정식 오목 (렌주룰 33/44 금수 완벽 적용)
+# 🗂️ TAB 1: 3D 정식 오목
 # ==============================================================================
 with tab1:
     st.subheader("🥋 프로 규격 15x15 오목 (렌주룰 적용)")
@@ -80,7 +80,7 @@ with tab1:
     components.html(omok_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 2: 3D 타격감 체스 (이동/사냥 가이드 가시성 유지 + 폰 퀸 자동 승격)
+# 🗂️ TAB 2: 3D 타격감 체스
 # ==============================================================================
 with tab2:
     st.subheader("👑 이동/사냥 시각 가이드 및 폰 퀸 변신(Promotion)이 도입된 3D 체스")
@@ -229,7 +229,7 @@ with tab2:
     components.html(chess_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 3: 3D 타격감 체커 (🔥 연속 콤보 사냥 + 킹 진화 + 가두기Blocked 판정 탑재)
+# 🗂️ TAB 3: 3D 타격감 체커
 # ==============================================================================
 with tab3:
     st.subheader("🏁 콤보 연타 사냥, 킹(👑) 진화 및 가두기 차단 규칙이 반영된 3D 체커")
@@ -373,7 +373,6 @@ with tab3:
                     }
                     comboMode = false; ckSel = null;
 
-                    // --- ⚙️ 정밀 승리 및 블로킹(Blocked) 탐지 엔진 ---
                     let rCount = 0; let bCount = 0;
                     for(let i=0; i<8; i++) for(let j=0; j<8; j++) { if(ckBoard[i][j][0]==='r') rCount++; if(ckBoard[i][j][0]==='b') bCount++; }
 
@@ -394,7 +393,7 @@ with tab3:
                                 } if(hasValidMove) break;
                             } if(hasValidMove) break;
                         }
-                        if(!hasValidMove) { ckWinner = ckTurn; } // 다음 사람이 이동 불가능하면 현재 플레이어 패승!
+                        if(!hasValidMove) { ckWinner = ckTurn; }
                     }
 
                     if (!ckWinner) {
@@ -414,4 +413,196 @@ with tab3:
     </script>
     """
     components.html(checkers_js, height=580)
-    st.caption("🏆 [체커 완전 규칙 정보] 내 모든 기물이 상대방 돌에 완벽히 가로막혀 더 이상 전진이나 점프를 할 수 없는 '이동 불능(Blocked)' 상태가 되면 정식 체커 규칙에 따라 그 즉시 가둔 사람이 판정승을 거두게 됩니다.")
+
+# ==============================================================================
+# 🗂️ TAB 4: 블록 블라스트 (🧱 드래그 앤 드롭 배치 + 8x8 줄 제거 + 콤보 폭발 이펙트)
+# ==============================================================================
+with tab4:
+    st.subheader("🧱 무한 중독 타격 퍼즐: 블록 블라스트 마스터")
+    block_js = """
+    <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif;">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 480px; margin: 0 auto 15px auto;">
+            <div id="b-score" style="padding: 10px 15px; background: #ecfdf5; color: #065f46; border-radius: 8px; font-weight: bold; font-size: 16px; border: 1px solid #a7f3d0;">得分 Score: 0</div>
+            <button id="b-reset" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px;">🔄 판 초기화</button>
+        </div>
+        <canvas id="blockCanvas" width="480" height="640" style="border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); background: #111827; cursor: pointer;"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('blockCanvas'); const ctx = canvas.getContext('2d');
+        const scoreUI = document.getElementById('b-score'); const resetBtn = document.getElementById('b-reset');
+
+        const GRID_SIZE = 8; const CELL_SIZE = 48; const BOARD_X = 48; const BOARD_Y = 48;
+        let board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+        let score = 0; let gameOver = false; let particles = [];
+
+        // 🎨 생동감 넘치는 네온 블록 컬러 세트
+        const colors = { 0: '#1f2937', 1: '#3b82f6', 2: '#10b981', 3: '#f59e0b', 4: '#ef4444', 5: '#8b5cf6', 6: '#ec4899' };
+        
+        // 🧱 원형 블록 블라스트 기하학적 블록 모양 데이터
+        const blockShapes = [
+            [[1]], // 1x1
+            [[1,1]], // 가로 2
+            [[1,1,1]], // 가로 3
+            [[1],[1]], // 세로 2
+            [[1,1],[1,1]], // 2x2 네모
+            [[1,1,1],[0,1,0]], // T자
+            [[1,0],[1,0],[1,1]], // L자
+            [[0,1],[0,1],[1,1]]
+        ];
+
+        // 하단에 배치할 무작위 블록 3개 보관함 정보
+        let hand = [ {shape:[], color:1, x:40, y:460, w:0, h:0, active:true}, {shape:[], color:2, x:180, y:460, w:0, h:0, active:true}, {shape:[], color:3, x:320, y:460, w:0, h:0, active:true} ];
+        let dragging = null; let dragOffset = {x:0, y:0}; let originalPos = {x:0, y:0};
+
+        function spawnHandPiece(index) {
+            let shape = blockShapes[Math.floor(Math.random() * blockShapes.length)];
+            let colorId = Math.floor(Math.random() * 6) + 1;
+            let startX = 40 + index * 140;
+            hand[index] = { shape: shape, color: colorId, x: startX, y: 470, ox: startX, oy: 470, active: true };
+        }
+        function initHand() { for(let i=0; i<3; i++) spawnHandPiece(i); }
+
+        function createBlastEffect(row, col, color) {
+            let cx = BOARD_X + col * CELL_SIZE + CELL_SIZE/2; let cy = BOARD_Y + row * CELL_SIZE + CELL_SIZE/2;
+            for(let i=0; i<15; i++) {
+                let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 4 + 2;
+                particles.push({ x: cx, y: cy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, r: Math.random()*3+2, alpha: 1, color: color });
+            }
+        }
+
+        function drawGrid() {
+            for(let r=0; r<GRID_SIZE; r++) {
+                for(let c=0; c<GRID_SIZE; c++) {
+                    let val = board[r][c];
+                    let x = BOARD_X + c * CELL_SIZE; let y = BOARD_Y + r * CELL_SIZE;
+                    ctx.fillStyle = colors[val];
+                    ctx.fillRect(x, y, CELL_SIZE - 2, CELL_SIZE - 2);
+                    if(val === 0) { ctx.strokeStyle = '#374151'; ctx.lineWidth = 1; ctx.strokeRect(x, y, CELL_SIZE-2, CELL_SIZE-2); } 
+                    else { ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x+2, y+2, CELL_SIZE-6, CELL_SIZE/3); }
+                }
+            }
+        }
+
+        function drawHand() {
+            hand.forEach((p) => {
+                if(!p.active) return;
+                ctx.save();
+                let scale = (dragging === p) ? 1.0 : 0.75; // 드래그 중일 때 원래 크기, 대기 중일 땐 앙증맞게 축소
+                ctx.translate(p.x, p.y); ctx.scale(scale, scale);
+                for(let r=0; r<p.shape.length; r++) {
+                    for(let c=0; c<p.shape[r].length; c++) {
+                        if(p.shape[r][c]) {
+                            ctx.fillStyle = colors[p.color];
+                            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
+                            ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(c*CELL_SIZE+2, r*CELL_SIZE+2, CELL_SIZE-6, 12);
+                        }
+                    }
+                } ctx.restore();
+            });
+        }
+
+        function checkLines() {
+            let fullRows = []; let fullCols = [];
+            for(let r=0; r<GRID_SIZE; r++) { let full = true; for(let c=0; c<GRID_SIZE; c++) { if(board[r][c]===0) full = false; } if(full) fullRows.push(r); }
+            for(let c=0; c<GRID_SIZE; c++) { let full = true; for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]===0) full = false; } if(full) fullCols.push(c); }
+
+            fullRows.forEach(r => { for(let c=0; c<GRID_SIZE; c++) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } score += 10; });
+            fullCols.forEach(c => { for(let r=0; r<GRID_SIZE; r++) { if(board[r][c]!==0) { createBlastEffect(r, c, colors[board[r][c]]); board[r][c] = 0; } } score += 10; });
+            if(fullRows.length > 0 || fullCols.length > 0) { scoreUI.innerHTML = `得分 Score: ${score} 🔥 Combo!`; }
+        }
+
+        function canPlace(shape, startR, startC) {
+            for(let r=0; r<shape.length; r++) {
+                for(let c=0; c<shape[r].length; c++) {
+                    if(shape[r][c]) {
+                        let targetR = startR + r; let targetC = startC + c;
+                        if(targetR < 0 || targetR >= GRID_SIZE || targetC < 0 || targetC >= GRID_SIZE) return false;
+                        if(board[targetR][targetC] !== 0) return false;
+                    }
+                }
+            } return true;
+        }
+
+        function checkGameOver() {
+            let activePieces = hand.filter(p => p.active);
+            if(activePieces.length === 0) return; // 다음 턴에 채워질 것이므로 세이프
+            for(let p of activePieces) {
+                for(let r=0; r<GRID_SIZE; r++) {
+                    for(let c=0; c<GRID_SIZE; c++) {
+                        if(canPlace(p.shape, r, c)) return; // 하나라도 둘 수 있는 자리가 있으면 게임 진행
+                    }
+                }
+            } gameOver = true; // 그 어떤 핸드 기물도 배치할 공간이 없으면 사망
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
+                if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+                ctx.save(); ctx.globalAlpha = p.alpha; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fillStyle = p.color; ctx.fill(); ctx.restore();
+            }
+        }
+
+        // --- 🖐️ 마우스 및 터치 모바일 호환 물리 드래그 시스템 ---
+        function getMousePos(e) { const rect = canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if(gameOver) return; const pos = getMousePos(e);
+            for(let p of hand) {
+                if(!p.active) continue;
+                // 미니 크기 감안한 히트박스 판정
+                let w = p.shape[0].length * CELL_SIZE * 0.8; let h = p.shape.length * CELL_SIZE * 0.8;
+                if(pos.x >= p.x && pos.x <= p.x + w && pos.y >= p.y && pos.y <= p.y + h) {
+                    dragging = p; dragOffset.x = pos.x - p.x; dragOffset.y = pos.y - p.y; originalPos.x = p.ox; originalPos.y = p.oy;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(!dragging) return; const pos = getMousePos(e);
+            dragging.x = pos.x - dragOffset.x; dragging.y = pos.y - dragOffset.y;
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if(!dragging) return;
+            // 보드 그리드상의 어디에 드롭되었는지 역연산
+            let gridC = Math.round((dragging.x - BOARD_X) / CELL_SIZE);
+            let gridR = Math.round((dragging.y - BOARD_Y) / CELL_SIZE);
+
+            if(canPlace(dragging.shape, gridR, gridC)) {
+                for(let r=0; r<dragging.shape.length; r++) {
+                    for(let c=0; c<dragging.shape[r].length; c++) {
+                        if(dragging.shape[r][c]) board[gridR + r][gridC + c] = dragging.color;
+                    }
+                }
+                dragging.active = false; score += dragging.shape.flat().filter(Boolean).length;
+                scoreUI.innerHTML = `得分 Score: ${score}`;
+                checkLines();
+
+                // 3개 블록 다 쓰면 새 리스트 핸드 스폰
+                if(hand.filter(p => p.active).length === 0) { initHand(); }
+                checkGameOver();
+            } else {
+                // 배치 실패 시 원래 자리로 스냅백 돌아가기
+                dragging.x = originalPos.x; dragging.y = originalPos.y;
+            } dragging = null;
+        });
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid(); drawHand(); updateParticles();
+            if(gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle = '#ef4444'; ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2);
+                ctx.fillStyle = '#fff'; ctx.font = '18px sans-serif'; ctx.fillText(`최종 스코어: ${score}점`, canvas.width/2, canvas.height/2 + 40);
+            } requestAnimationFrame(loop);
+        }
+
+        resetBtn.addEventListener('click', () => { board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); score = 0; gameOver = false; scoreUI.innerHTML = "得分 Score: 0"; initHand(); });
+        initHand(); loop();
+    </script>
+    """
+    components.html(block_js, height=690)
+    st.caption("💡 **[블록 블라스트 플레이 룰]** 아래 나타나는 미니 네온 블록 묶음을 마우스로 누른 채 **드래그하여 상단 8x8 보드판 원하는 칸 위에 놓으세요.** 테트리스처럼 가로줄이나 세로줄이 빈틈없이 완성되면 라인이 터지면서 높은 보너스 콤보 점수를 획득합니다. 만약 아래 있는 블록을 보드판 그 어느 곳에도 더 이상 배치할 수 없게 되면 게임오버됩니다.")
