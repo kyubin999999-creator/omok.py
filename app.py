@@ -230,7 +230,7 @@ with tab2:
     components.html(chess_js, height=580)
 
 # ==============================================================================
-# 🗂️ TAB 3: 3D 타격감 체커
+# 🗂️ TAB 3: 3D 타격감 체커 (🔥 오타 전격 수정 완료!)
 # ==============================================================================
 with tab3:
     st.subheader("🏁 콤보 연타 사냥, 킹(👑) 진화 및 가두기 차단 규칙이 반영된 3D 체커")
@@ -267,7 +267,7 @@ with tab3:
             if (!comboMode && Math.abs(dc) === 1) { if (isKing && Math.abs(dr) === 1) return { jump: false }; if (!isKing && dr === (baseColor === 'r' ? -1 : 1)) return { jump: false }; }
             if (Math.abs(dc) === 2) {
                 let validRowJump = false; if (isKing && Math.abs(dr) === 2) validRowJump = true; if (!isKing && dr === (baseColor === 'r' ? -2 : 2)) validRowJump = true;
-                if (validRowJump) { let midR = sr + (dr / 2); let midC = sc + (dc / 2); let target = ckBoard[midR][midC]; if (target !== '' && target[0] !== baseColor) { return { jump: true, mr: midR, mc: mc: midC }; } }
+                if (validRowJump) { let midR = sr + (dr / 2); let midC = sc + (dc / 2); let target = ckBoard[midR][midC]; if (target !== '' && target[0] !== baseColor) { return { jump: true, mr: midR, mc: midC }; } }
             } return false;
         }
 
@@ -495,11 +495,11 @@ with tab4:
     components.html(block_js, height=690)
 
 # ==============================================================================
-# 🗂️ TAB 5: 클래식 테트리스 (🔥 전격 신설)
+# 🗂️ TAB 5: 클래식 테트리스 (🔥 스페이스바 조작감 완벽 패치!)
 # ==============================================================================
 with tab5:
     st.subheader("🧱 타격감 폭발 자바스크립트 클래식 테트리스")
-    st.caption("💡 **키보드 조작 가이드:** `←` `→` 이동 | `↑` 블록 회전 | `↓` 부드러운 하강 | `스페이스바` 초고속 수직 낙하(Hard Drop)")
+    st.caption("💡 **키보드 조작 가이드:** `←` `→` 이동 | `▲` 블록 회전 | `▼` 부드러운 하강 | `스페이스바` 수직 하강 연타")
     
     tetris_js = """
     <div style="text-align: center; font-family: 'Malgun Gothic', sans-serif; color: white;">
@@ -518,7 +518,7 @@ with tab5:
                 <span style="font-size: 12px; font-weight: bold; color: #9ca3af;">NEXT</span>
                 <canvas id="nextCanvas" width="80" height="80" style="background: #111827; border-radius: 4px;"></canvas>
                 <div style="font-size: 11px; color: #9ca3af; margin-top: 5px; line-height: 1.3; text-align: left;">
-                    🎯 <b>팁:</b><br>캔버스를 클릭한 뒤 방향키를 누르세요!
+                    🎯 <b>필수 팁:</b><br>게임판을 마우스로 <br><b>한 번 클릭한 뒤</b><br>방향키를 누르세요!
                 </div>
             </div>
         </div>
@@ -535,9 +535,7 @@ with tab5:
         
         let score = 0; let linesClearedTotal = 0; let level = 1; let gameOver = false;
         let dropCounter = 0; let dropInterval = 800; let lastTime = 0;
-        let lineFlashTimer = 0; let flashRows = [];
 
-        // 7가지 오리지널 테트리스 블록 색상 정보
         const colors = [ null, '#06b6d4', '#1d4ed8', '#f97316', '#eab308', '#22c55e', '#a855f7', '#ef4444' ];
         const pieces = {
             'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -574,9 +572,7 @@ with tab5:
             nextPieceMatrix = randPiece();
             drawNext();
 
-            if (collide(grid, player)) {
-                gameOver = true;
-            }
+            if (collide(grid, player)) { gameOver = true; }
         }
 
         function collide(grid, player) {
@@ -620,12 +616,6 @@ with tab5:
             } dropCounter = 0;
         }
 
-        function playerHardDrop() {
-            if(gameOver) return;
-            while(!collide(grid, player)) { player.pos.y++; }
-            player.pos.y--; merge(grid, player); playerReset(); arenaClear(); dropCounter = 0;
-        }
-
         function arenaClear() {
             let rowCount = 0;
             outer: for (let r = ROWS - 1; r >= 0; --r) {
@@ -650,7 +640,6 @@ with tab5:
                     if (value !== 0) {
                         targetCtx.fillStyle = colors[value];
                         targetCtx.fillRect((c + offset.x) * sz, (r + offset.y) * sz, sz - 1, sz - 1);
-                        // 3D 광택 효과 테두리
                         targetCtx.fillStyle = 'rgba(255,255,255,0.15)';
                         targetCtx.fillRect((c + offset.x) * sz + 1, (r + offset.y) * sz + 1, sz - 3, sz / 4);
                     }
@@ -668,8 +657,6 @@ with tab5:
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 기존 고정된 격자판 그리기
             grid.forEach((row, r) => {
                 row.forEach((value, c) => {
                     if (value !== 0) {
@@ -681,10 +668,8 @@ with tab5:
                 });
             });
 
-            // 움직이는 플레이어 블록 그리기
             if (player.matrix) { drawMatrix(player.matrix, player.pos, ctx); }
 
-            // 게임오버 시 오버레이 화면 처리
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#ef4444'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 15);
@@ -698,18 +683,18 @@ with tab5:
             if (!gameOver) { requestAnimationFrame(update); }
         }
 
-        // 테트리스 플레이 시 Streamlit 스크롤이 멋대로 위아래로 튀는 것을 강력 방지
+        // 키보드로 인한 화면 스크롤 현상 완벽 방지 조치
         window.addEventListener('keydown', function(e) {
             if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) { e.preventDefault(); }
         }, false);
 
         canvas.addEventListener('keydown', e => {
             if (gameOver) return;
-            if (e.keyCode === 37) { playerMove(-1); }      // Left Arrow
-            else if (e.keyCode === 39) { playerMove(1); }   // Right Arrow
-            else if (e.keyCode === 40) { playerDrop(); }    // Down Arrow
-            else if (e.keyCode === 38) { playerRotate(); }  // Up Arrow
-            else if (e.keyCode === 32) { playerDrop(); }      // Spacebar (적당히 빠른 하강)
+            if (e.keyCode === 37) { playerMove(-1); }      // Left Arrow (좌)
+            else if (e.keyCode === 39) { playerMove(1); }   // Right Arrow (우)
+            else if (e.keyCode === 40) { playerDrop(); }    // Down Arrow (하강)
+            else if (e.keyCode === 38) { playerRotate(); }  // Up Arrow (블록 회전)
+            else if (e.keyCode === 32) { playerDrop(); }    // Spacebar (속도 패치 완료!)
         });
 
         resetBtn.addEventListener('click', () => {
@@ -719,7 +704,6 @@ with tab5:
             playerReset(); update(); canvas.focus();
         });
 
-        // 초기 시작선 구축
         canvas.focus(); playerReset(); update();
     </script>
     """
